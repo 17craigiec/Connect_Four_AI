@@ -25,7 +25,12 @@ class AlphaBetaAgent(agent.Agent):
     # NOTE: make sure the column is legal, or you'll lose the game.
     def go(self, brd):
         """Search for the best move (choice of column for the token)"""
-        # Your code here
+        # check for triples, doubles
+        player1Threes = self.getThrees(brd, 1)
+        player2Threes = self.getThrees(brd, 2)
+        player1Twos = self.getTwos(brd, 1)
+        player2Twos = self.getTwos(brd, 2)
+        return 25 * player1Threes + 5 * player1Twos - (player2Threes * 25 + player2Twos)
 
     # Get the successors of the given board.
     #
@@ -51,3 +56,58 @@ class AlphaBetaAgent(agent.Agent):
             # Add board to list of successors
             succ.append((nb,col))
         return succ
+
+    def getThrees(self, brd, player):
+        """returns the number of three in a rows for a given player (counts threes that are not touching)"""
+        numThrees = 0
+        for x in range(brd.w):
+            for y in range(brd.h):
+                if brd.board[y][x] == 0:
+                    break
+                if brd.board[y][x] != player:
+                    continue
+                # boundry checking
+                if x + 2 < brd.w:
+                    # can go to the right
+                    if brd.board[y][x + 1] == player and brd.board[y][x + 2] == player:
+                        numThrees += 1
+                if y + 2 < brd.h:
+                    # can go down
+                    if brd.board[y + 1][x] == player and brd.board[y + 2][x] == player:
+                        numThrees += 1
+                if x + 2 < brd.w and y + 2 < brd.h:
+                    # down right
+                    if brd.board[y + 1][x + 1] == player and brd.board[y + 2][x + 2] == player:
+                        numThrees += 1
+                if x - 2 >= 0 and y + 2 < brd.h:
+                    # down left
+                    if brd.board[y + 1][x - 1] == player and brd.board[y + 2][x - 2] == player:
+                        numThrees += 1
+        return numThrees
+
+    def getTwos(self, brd,player):
+        numTwos = 0
+        for x in range(brd.w):
+            for y in range(brd.h):
+                if brd.board[y][x] == 0:
+                    break
+                if brd.board[y][x] != player:
+                    continue
+                # boundry checking
+                if x + 1 < brd.w:
+                    # can go to the right
+                    if brd.board[y][x + 1] == player:
+                        numTwos += 1
+                if y + 1 < brd.h:
+                    # can go down
+                    if brd.board[y + 1][x] == player:
+                        numTwos += 1
+                if x + 1 < brd.w and y + 1 < brd.h:
+                    # down right
+                    if brd.board[y + 1][x + 1] == player:
+                        numTwos += 1
+                if x - 1 >= 0 and y + 1 < brd.h:
+                    # down left
+                    if brd.board[y + 1][x - 1] == player:
+                        numTwos += 1
+        return numTwos
