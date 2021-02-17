@@ -5,6 +5,8 @@ import agent
 # Alpha-Beta Search Agent #
 ###########################
 
+MAX, MIN = 1000000, -1000000
+
 class AlphaBetaAgent(agent.Agent):
     """Agent that uses alpha-beta search"""
 
@@ -85,7 +87,7 @@ class AlphaBetaAgent(agent.Agent):
                         numThrees += 1
         return numThrees
 
-    def getTwos(self, brd,player):
+    def getTwos(self, brd, player):
         numTwos = 0
         for x in range(brd.w):
             for y in range(brd.h):
@@ -111,3 +113,37 @@ class AlphaBetaAgent(agent.Agent):
                     if brd.board[y + 1][x - 1] == player:
                         numTwos += 1
         return numTwos
+
+    def minimax(self, depth, nodeIndex, player, brd, alpha, beta):
+        # change the depth based on what we decide is fit
+        # terminating condition
+        if depth == 3:
+            return brd.board[nodeIndex]
+        best = brd.go()
+        if player:
+            best = MIN
+
+            for i in range(0, 2):
+                val = minimax(depth + 1, nodeIndex * 2 + i, False, brd, alpha, beta)
+                best = max(best, val)
+                alpha = max(alpha, best)
+
+                # alpha beta pruning
+                if beta <= alpha:
+                    break
+
+            return best
+
+        else:
+            best = MAX
+
+            for i in range(0, 2):
+                val = minimax(depth + 1, nodeIndex * 2 + i, True, brd, alpha, beta)
+                best = min(best, val)
+                beta = min(beta, best)
+
+                # alpha beta pruning
+                if beta <= alpha:
+                    break
+
+            return best
