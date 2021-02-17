@@ -94,6 +94,9 @@ class AlphaBetaAgent(agent.Agent):
                     # I will need a separate loop to check for if the space is between two of my own, because then I like it,
                     #   especially if both of the sides add to n-1 in total, or n if I move to that free spot!!
                     # this type of spot should also be worth 10*(n-1)
+                    heuristic_total += self.search_neighbors_break(brd, row, col, 1)
+                    heuristic_total += self.search_neighbors_break(brd, row, col, -1)
+                    heuristic_total += self.search_neighbors_break(brd, row, col, 0)
 
         return heuristic_total
 
@@ -126,15 +129,59 @@ class AlphaBetaAgent(agent.Agent):
 
         return heuristic_total_linear
 
-    def search_neighbors_break(self, brd):
+    def search_neighbors_break(self, brd, row, col, dy):
         heuristic_total_break = 0
         count_left = 0
         count_right = 0
 
-        #loop "left"
+        # curr_row = row
+        # curr_col = col
 
+        #loop "left"
+        for i in range(0, brd.n):
+            if (col + i*dy) < brd.w and (col + i*dy) > 0 and (row -i) < brd.h and (row -i) > 0:  # this checks that it is still in-bounds
+                current_cell = brd[col + i*dy][row-i]
+                if current_cell == self.name :
+                    count_left += 1
+                    heuristic_total_break += 50
+                elif current_cell == 0:
+                    heuristic_total_break += 25
+                    break
+                else:
+                    heuristic_total_break = 0
+                    break
 
         #loop "right"
+        for i in range(0, brd.n):
+            if (col + i*dy) < brd.w and (col + i*dy) > 0 and (row + i) < brd.h and (row + i) > 0:  # this checks that it is still in-bounds
+                current_cell = brd[col + i*dy][row+i]
+                if current_cell == self.name :
+                    count_right += 1
+                    heuristic_total_break += 50
+                elif current_cell == 0:
+                    heuristic_total_break += 25
+                    break
+                else:
+                    heuristic_total_break = 0
+                    break
+                
+        if count_right == n-1:
+            heuristic_total_break += 1000
+        if count_left == n-1:
+            heuristic_total_break += 1000
+        if count_right + count_left == n-1:
+            heuristic_total_break += 1000
 
 
         return heuristic_total_break
+
+
+def minimax(self, depth):
+    # set alpha and beta to "infinity"
+    MAX, MIN = 100000, -100000
+
+    # terminating condition - it is a leaf node
+    if depth == self.max_depth:
+        return #value of the node
+
+    
