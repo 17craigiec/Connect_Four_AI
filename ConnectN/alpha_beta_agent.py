@@ -1,3 +1,4 @@
+import numpy as np
 import math
 import agent
 
@@ -26,6 +27,9 @@ class AlphaBetaAgent(agent.Agent):
     def go(self, brd):
         """Search for the best move (choice of column for the token)"""
         # Your code here
+        self.calc_heuristic(brd)
+
+        return np.random.randint(0,brd.w-1)
 
     # Get the successors of the given board.
     #
@@ -51,3 +55,118 @@ class AlphaBetaAgent(agent.Agent):
             # Add board to list of successors
             succ.append((nb,col))
         return succ
+
+    def calc_heuristic(self, brd):
+        # Heuristic will be = your board score - opponent board score
+        self_score = self.get_player_score(brd, 2)
+        print("Self score calculated: " + str(self_score))
+        opponent_score = self.get_player_score(brd, 1)
+        print("Opponent score calculated: " + str(opponent_score))
+
+        heur = self_score - opponent_score
+        print("Heuristic Value (-opponent_leaning +self_leaning): " + str(heur))
+        return heur
+
+    def get_player_score(self, brd, player):
+        valid_rows = self.get_valid_rows(brd)
+        player_score = 0
+
+        for row in valid_rows:
+            row_cnt = 0
+            for row_dir in [row, row[::-1]]:
+                for r in row_dir:
+                    if r[0] == player:
+                        row_cnt = row_cnt + 1
+                    if r[0] == 0 and row_cnt != 0:
+                        player_score = player_score + row_cnt*(brd.h-self.get_pos_height(brd, r[1]))
+                        row_cnt = 0
+
+        return player_score
+
+    def get_pos_height(self, brd, pos):
+        np_board = np.array(brd.board)
+        height = 0
+        while pos[0] >= 0 and np_board[pos[0],pos[1]] == 0:
+            pos = (pos[0]-1,pos[1])
+            height = height + 1
+        return height-1
+
+    def get_valid_rows(self, brd):
+        # check vertical rows
+        # check horizontal rows
+        # check diagonal right
+        # check diagonal left
+
+        np_board = np.array(brd.board)
+        # A collection of all rows (and their states) in which a connect-n is possible
+        valid_rows = []
+
+        # vertical rows
+        for w in range(brd.w):
+            tmp_row = []
+            for h in range(brd.h):
+                tmp_row.append(( np_board[h,w] , (h,w) ))
+            valid_rows.append(tmp_row)
+
+        # horizontal rows
+        for h in range(brd.h):
+            tmp_row = []
+            for w in range(brd.w):
+                tmp_row.append(( np_board[h,w] , (h,w) ))
+            valid_rows.append(tmp_row)
+
+        # diagonal right
+        for h in range(brd.h - (brd.n - 1)):
+            tmp_row = []
+            curr = (h,0) # starts from w = 0 
+            # Check to see the diagonal can ascend unbounded else bound to size of min axis
+            if brd.w > brd.h - h:
+                diagonal_width = brd.h - h
+            else:
+                diagonal_width = brd.w
+
+            for w in range(diagonal_width):
+                tmp_row.append(( np_board[curr[0],curr[1]] , curr ))
+                curr = (curr[0]+1, curr[1]+1)
+            valid_rows.append(tmp_row)
+        for w in range(brd.w - (brd.n - 1))[1:]: # The diagonal at 0,0 if covered by the loop above
+            tmp_row = []
+            curr = (0,w) # current always starts at h = 0
+            # Check to see the diagonal can ascend unbounded else bound to size of min axis
+            if brd.h > brd.w - w:
+                diagonal_width = brd.w - w
+            else:
+                diagonal_width = brd.h
+            for h in range(diagonal_width):
+                tmp_row.append(( np_board[curr[0],curr[1]] , curr ))
+                curr = (curr[0]+1, curr[1]+1)
+            valid_rows.append(tmp_row)
+
+        # diagonal left
+        for h in range(brd.h - (brd.n - 1)):
+            tmp_row = []
+            curr = (h,brd.w-1) # starts from w = brd.w 
+            # Check to see the diagonal can ascend unbounded else bound to size of min axis
+            if brd.w > brd.h - h:
+                diagonal_width = brd.h - h
+            else:
+                diagonal_width = brd.w
+
+            for w in range(diagonal_width):
+                tmp_row.append(( np_board[curr[0],curr[1]] , curr ))
+                curr = (curr[0]+1, curr[1]-1)
+            valid_rows.append(tmp_row)
+        for w in [(brd.w) - x for x in range(brd.w - (brd.n - 1))[1:]]: # The diagonal at 0,0 if covered by the loop above
+            tmp_row = []
+            curr = (0,w-1) # current always starts at h = 0
+            # Check to see the diagonal can ascend unbounded else bound to size of min axis
+            if brd.h > w:
+                diagonal_width = w
+            else:
+                diagonal_width = brd.h
+            for h in range(diagonal_width):
+                tmp_row.append(( np_board[curr[0],curr[1]] , curr ))
+                curr = (curr[0]+1, curr[1]-1)
+            valid_rows.append(tmp_row)
+            
+        return valid_rows
