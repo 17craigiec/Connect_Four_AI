@@ -176,12 +176,14 @@ class AlphaBetaAgent(agent.Agent):
         return heuristic_total_break
 
 
-def minimax(self, depth):
+def minimax(self, current_depth, state, is_max_turn, alpha, beta):
     # set alpha and beta to "infinity"
     MAX, MIN = 100000, -100000
 
     # terminating condition - it is a leaf node
-    if depth == self.max_depth:
-        return #value of the node
+    if current_depth == self.max_depth:
+        return state #value of the node
+
+    
 
     
