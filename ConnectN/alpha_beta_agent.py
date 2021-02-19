@@ -53,6 +53,78 @@ class AlphaBetaAgent(agent.Agent):
             # Add board to list of successors
             succ.append((nb,col))
         return succ
+
+
+# ========================== MINIMAX RELATED ===============================
+
+    def minimax(self, brd):
+        # Calculate the numeric best value
+        best_val = self.get_max(brd)
+
+        possible_moves = self.get_successors(brd)
+        sorted_possible_moves = self.sort_moves_by_huer(possible_moves)
+
+        best_move = None
+        for move in sorted_possible_moves:
+            if self.calc_heuristic(move[0]) == best_val:
+                # The second value in the tuple is the column number to enter your disc
+                best_move = move[1]
+                break
+
+        # Return the column number
+        if best_move is None:
+            print("ERROR no best move found...")
+        return best_move
+
+    def get_max(self, brd):
+        # Check for a terminal state (list of free_cols is empty)
+        if not brd.free_cols():
+            return self.calc_heuristic(brd)
+
+        # Set the max value beta to a value of negative inf
+        beta = -1*float('inf')
+
+        # Get a list of sorted possible moves
+        possible_moves = self.get_successors(brd)
+        sorted_possible_moves = self.sort_moves_by_huer(possible_moves)
+
+        for move in sorted_possible_moves:
+            beta = max(beta, self.get_min(move))
+        return beta
+
+    def get_min(self, brd):
+        # Check for a terminal state (list of free_cols is empty)
+        if not brd.free_cols():
+            return self.calc_heuristic(brd)
+
+        # Set the min value alpha to a value of inf
+        alpha = float('inf')
+
+        # Get a list of sorted possible moves
+        possible_moves = self.get_successors(brd)
+        # Reverse the sorted moves so that the worst board configuration is searched first
+        sorted_possible_moves = self.sort_moves_by_huer(possible_moves)[::-1]
+
+        for move in sorted_possible_moves:
+            alpha = max(alpha, self.get_min(move))
+        return alpha
+
+    def sort_moves_by_huer(self, possible_moves):
+        q = PriorityQueue()
+        sorted_moves = []
+
+        for move in possible_moves:
+            q.put((self.calc_heuristic(move[0]), move[0]))
+
+        while not q.empty():
+            q_move = q.get()
+            sorted_moves.append(q_move[1])
+
+        return sorted_moves
+        
+
+    # ============================ END MINIMAX =================================
+    # ==========================================================================
         
     # Calculate the heuristic for a given board space
     #
@@ -174,16 +246,3 @@ class AlphaBetaAgent(agent.Agent):
 
 
         return heuristic_total_break
-
-
-def minimax(self, current_depth, state, is_max_turn, alpha, beta):
-    # set alpha and beta to "infinity"
-    MAX, MIN = 100000, -100000
-
-    # terminating condition - it is a leaf node
-    if current_depth == self.max_depth:
-        return state #value of the node
-
-    
-
-    
