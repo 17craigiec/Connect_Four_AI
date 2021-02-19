@@ -31,7 +31,7 @@ class AlphaBetaAgent(agent.Agent):
         # Your code here
         self.calc_heuristic(brd)
 
-        return np.random.randint(0, brd.w-1)
+        return self.minimax(brd)
 
     # Get the successors of the given board.
     #
@@ -62,55 +62,79 @@ class AlphaBetaAgent(agent.Agent):
 
     def minimax(self, brd):
         # Calculate the numeric best value
-        best_val = self.get_max(brd)
+        # best_val = self.get_max(brd)
 
+        depth = 6
         possible_moves = self.get_successors(brd)
+
+        best_move = possible_moves[0]
+        best_val = -float("Infinity")
+        for move in possible_moves:
+            val = self.get_min(move[0], float('inf'), -float('inf'), depth)
+            if val > best_val:
+                best_move = move[1]
+                best_val = val
+
+        return best_move
+
         sorted_possible_moves = self.sort_moves_by_huer(possible_moves)
 
-        best_move = None
-        for move in sorted_possible_moves:
-            if self.calc_heuristic(move[0]) == best_val:
-                # The second value in the tuple is the column number to enter your disc
-                best_move = move[1]
-                break
+        # best_move = None
+        # for move in sorted_possible_moves:
+        #     if self.calc_heuristic(move[0]) == best_val:
+        #         # The second value in the tuple is the column number to enter your disc
+        #         best_move = move[1]
+        #         break
 
         # Return the column number
         if best_move is None:
             print("ERROR no best move found...")
         return best_move
 
-    def get_max(self, brd):
+    def get_max(self, brd, alpha, beta, depth):
+        outcome = brd.get_outcome()
+        if outcome != 0:
+            return -float('inf')
+
         # Check for a terminal state (list of free_cols is empty)
         if not brd.free_cols():
-            return self.calc_heuristic(brd)
+            return 0
 
-        # Set the max value beta to a value of negative inf
-        beta = -1*float('inf')
+        if depth == 0:
+            return self.calc_heuristic(brd)
 
         # Get a list of sorted possible moves
         possible_moves = self.get_successors(brd)
-        sorted_possible_moves = self.sort_moves_by_huer(possible_moves)
+        # sorted_possible_moves = self.sort_moves_by_huer(possible_moves)
+        val = -float('inf')
+        for move in possible_moves:
+            val = max(val, self.get_min(move[0], alpha, beta, depth -1))
+            beta = max(val, beta)
+            if beta > alpha:
+                return val
+        return val
 
-        for move in sorted_possible_moves:
-            beta = max(beta, self.get_min(move))
-        return beta
-
-    def get_min(self, brd):
+    def get_min(self, brd, alpha, beta, depth):
+        if brd.get_outcome() != 0:
+            return float('inf')
         # Check for a terminal state (list of free_cols is empty)
         if not brd.free_cols():
-            return self.calc_heuristic(brd)
+            return 0
 
-        # Set the min value alpha to a value of inf
-        alpha = float('inf')
+        if depth == 0:
+            return self.calc_heuristic(brd)
 
         # Get a list of sorted possible moves
         possible_moves = self.get_successors(brd)
         # Reverse the sorted moves so that the worst board configuration is searched first
-        sorted_possible_moves = self.sort_moves_by_huer(possible_moves)[::-1]
-
-        for move in sorted_possible_moves:
-            alpha = max(alpha, self.get_min(move))
-        return alpha
+        # sorted_possible_moves = self.sort_moves_by_huer(possible_moves)[::-1]
+        val = float('inf')
+        for move in possible_moves:
+            val = min(val, self.get_max(move[0], alpha, beta, depth - 1))
+            alpha = min(val, beta)
+            if alpha < beta:
+                return val
+        return val
 
     def sort_moves_by_huer(self, possible_moves):
         q = PriorityQueue()
@@ -136,12 +160,12 @@ class AlphaBetaAgent(agent.Agent):
     def calc_heuristic(self, brd):
         # Heuristic will be = your board score - opponent board score
         self_score = self.get_player_score(brd, 2)
-        print("Self score calculated: " + str(self_score))
+        # print("Self score calculated: " + str(self_score))
         opponent_score = self.get_player_score(brd, 1)
-        print("Opponent score calculated: " + str(opponent_score))
+        # print("Opponent score calculated: " + str(opponent_score))
 
         heur = self_score - opponent_score
-        print("Heuristic Value (-opponent_leaning +self_leaning): " + str(heur))
+        # print("Heuristic Value (-opponent_leaning +self_leaning): " + str(heur))
         return heur
 
     def get_player_score(self, brd, player):
