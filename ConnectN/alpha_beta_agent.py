@@ -7,6 +7,7 @@ import agent
 # Alpha-Beta Search Agent #
 ###########################
 
+
 class AlphaBetaAgent(agent.Agent):
     """Agent that uses alpha-beta search"""
 
@@ -30,7 +31,7 @@ class AlphaBetaAgent(agent.Agent):
         # Your code here
         self.calc_heuristic(brd)
 
-        return np.random.randint(0,brd.w-1)
+        return np.random.randint(0, brd.w-1)
 
     # Get the successors of the given board.
     #
@@ -54,9 +55,8 @@ class AlphaBetaAgent(agent.Agent):
             # (This internally changes nb.player, check the method definition!)
             nb.add_token(col)
             # Add board to list of successors
-            succ.append((nb,col))
+            succ.append((nb, col))
         return succ
-
 
     # ========================== MINIMAX RELATED ===============================
 
@@ -64,8 +64,8 @@ class AlphaBetaAgent(agent.Agent):
         # Calculate the numeric best value
         best_val = self.get_max(brd)
 
-        posible_moves = self.get_successors(brd)
-        sorted_possible_moves = self.sort_moves_by_huer(posible_moves)
+        possible_moves = self.get_successors(brd)
+        sorted_possible_moves = self.sort_moves_by_huer(possible_moves)
 
         best_move = None
         for move in sorted_possible_moves:
@@ -75,10 +75,9 @@ class AlphaBetaAgent(agent.Agent):
                 break
 
         # Return the column number
-        if best_move == None:
+        if best_move is None:
             print("ERROR no best move found...")
         return best_move
-
 
     def get_max(self, brd):
         # Check for a terminal state (list of free_cols is empty)
@@ -89,13 +88,12 @@ class AlphaBetaAgent(agent.Agent):
         beta = -1*float('inf')
 
         # Get a list of sorted possible moves
-        posible_moves = self.get_successors(brd)
-        sorted_possible_moves = self.sort_moves_by_huer(posible_moves)
+        possible_moves = self.get_successors(brd)
+        sorted_possible_moves = self.sort_moves_by_huer(possible_moves)
 
         for move in sorted_possible_moves:
             beta = max(beta, self.get_min(move))
         return beta
-
 
     def get_min(self, brd):
         # Check for a terminal state (list of free_cols is empty)
@@ -106,20 +104,19 @@ class AlphaBetaAgent(agent.Agent):
         alpha = float('inf')
 
         # Get a list of sorted possible moves
-        posible_moves = self.get_successors(brd)
+        possible_moves = self.get_successors(brd)
         # Reverse the sorted moves so that the worst board configuration is searched first
-        sorted_possible_moves = self.sort_moves_by_huer(posible_moves)[::-1]
+        sorted_possible_moves = self.sort_moves_by_huer(possible_moves)[::-1]
 
         for move in sorted_possible_moves:
             alpha = max(alpha, self.get_min(move))
         return alpha
 
-
-    def sort_moves_by_huer(self, posible_moves):
+    def sort_moves_by_huer(self, possible_moves):
         q = PriorityQueue()
         sorted_moves = []
 
-        for move in posible_moves:
+        for move in possible_moves:
             q.put((self.calc_heuristic(move[0]), move[0]))
 
         while not q.empty():
@@ -166,8 +163,8 @@ class AlphaBetaAgent(agent.Agent):
     def get_pos_height(self, brd, pos):
         np_board = np.array(brd.board)
         height = 0
-        while pos[0] >= 0 and np_board[pos[0],pos[1]] == 0:
-            pos = (pos[0]-1,pos[1])
+        while pos[0] >= 0 and np_board[pos[0], pos[1]] == 0:
+            pos = (pos[0]-1, pos[1])
             height = height + 1
         return height-1
 
@@ -185,67 +182,68 @@ class AlphaBetaAgent(agent.Agent):
         for w in range(brd.w):
             tmp_row = []
             for h in range(brd.h):
-                tmp_row.append(( np_board[h,w] , (h,w) ))
+                tmp_row.append((np_board[h, w], (h, w)))
             valid_rows.append(tmp_row)
 
         # horizontal rows
         for h in range(brd.h):
             tmp_row = []
             for w in range(brd.w):
-                tmp_row.append(( np_board[h,w] , (h,w) ))
+                tmp_row.append((np_board[h, w], (h, w)))
             valid_rows.append(tmp_row)
 
         # diagonal right
         for h in range(brd.h - (brd.n - 1)):
             tmp_row = []
-            curr = (h,0) # starts from w = 0 
+            curr = (h, 0)  # starts from w = 0
             # Check to see the diagonal can ascend unbounded else bound to size of min axis
             if brd.w > brd.h - h:
                 diagonal_width = brd.h - h
             else:
                 diagonal_width = brd.w
-
+# ??? loop not used
             for w in range(diagonal_width):
-                tmp_row.append(( np_board[curr[0],curr[1]] , curr ))
+                tmp_row.append((np_board[curr[0], curr[1]], curr))
                 curr = (curr[0]+1, curr[1]+1)
             valid_rows.append(tmp_row)
-        for w in range(brd.w - (brd.n - 1))[1:]: # The diagonal at 0,0 if covered by the loop above
+        for w in range(brd.w - (brd.n - 1))[1:]:  # The diagonal at 0,0 if covered by the loop above
             tmp_row = []
-            curr = (0,w) # current always starts at h = 0
+            curr = (0, w)  # current always starts at h = 0
             # Check to see the diagonal can ascend unbounded else bound to size of min axis
             if brd.h > brd.w - w:
                 diagonal_width = brd.w - w
             else:
                 diagonal_width = brd.h
+                # loop not used????
             for h in range(diagonal_width):
-                tmp_row.append(( np_board[curr[0],curr[1]] , curr ))
+                tmp_row.append((np_board[curr[0], curr[1]], curr))
                 curr = (curr[0]+1, curr[1]+1)
             valid_rows.append(tmp_row)
 
         # diagonal left
         for h in range(brd.h - (brd.n - 1)):
             tmp_row = []
-            curr = (h,brd.w-1) # starts from w = brd.w 
+            curr = (h, brd.w-1)  # starts from w = brd.w
             # Check to see the diagonal can ascend unbounded else bound to size of min axis
             if brd.w > brd.h - h:
                 diagonal_width = brd.h - h
             else:
                 diagonal_width = brd.w
-
+# loop not used?
             for w in range(diagonal_width):
-                tmp_row.append(( np_board[curr[0],curr[1]] , curr ))
+                tmp_row.append((np_board[curr[0], curr[1]], curr))
                 curr = (curr[0]+1, curr[1]-1)
             valid_rows.append(tmp_row)
-        for w in [(brd.w) - x for x in range(brd.w - (brd.n - 1))[1:]]: # The diagonal at 0,0 if covered by the loop above
+        for w in [brd.w - x for x in range(brd.w - (brd.n - 1))[1:]]:  # diagonal at 0,0 if covered by the loop above
             tmp_row = []
-            curr = (0,w-1) # current always starts at h = 0
+            curr = (0, w-1)  # current always starts at h = 0
             # Check to see the diagonal can ascend unbounded else bound to size of min axis
             if brd.h > w:
                 diagonal_width = w
             else:
                 diagonal_width = brd.h
             for h in range(diagonal_width):
-                tmp_row.append(( np_board[curr[0],curr[1]] , curr ))
+                tmp_row.append((np_board[curr[0], curr[1]], curr))
                 curr = (curr[0]+1, curr[1]-1)
             valid_rows.append(tmp_row)
             
