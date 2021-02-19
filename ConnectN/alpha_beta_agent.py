@@ -1,9 +1,12 @@
+from queue import PriorityQueue
+import numpy as np
 import math
 import agent
 
 ###########################
 # Alpha-Beta Search Agent #
 ###########################
+
 
 class AlphaBetaAgent(agent.Agent):
     """Agent that uses alpha-beta search"""
@@ -26,8 +29,9 @@ class AlphaBetaAgent(agent.Agent):
     def go(self, brd):
         """Search for the best move (choice of column for the token)"""
         # Your code here
+        self.calc_heuristic(brd)
 
-        #this is going to be where the minimax / pruning algorithm goes
+        return np.random.randint(0, brd.w-1)
     
     # Get the successors of the given board.
     #
@@ -131,7 +135,7 @@ class AlphaBetaAgent(agent.Agent):
     # PARAM [board.Board] brd: the board state
     # RETURN [int]: the heuristic for the given board, such that a higher score correlates to a preferable board 
     #
-    def get_heuristic(self, brd):
+    def calc_heuristic(self, brd):
 
         heuristic_total = 0
 
