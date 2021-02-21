@@ -16,9 +16,12 @@ class AlphaBetaAgent(agent.Agent):
     # PARAM [string] name:      the name of this player
     # PARAM [int]    max_depth: the maximum search depth
     def __init__(self, name, max_depth):
+
+        player = -1
+
         super().__init__(name)
         # Max search depth
-        self.max_depth = max_depth
+        self.m_max_depth = max_depth
 
     # Pick a column.
     #
@@ -30,9 +33,9 @@ class AlphaBetaAgent(agent.Agent):
         """Search for the best move (choice of column for the token)"""
         # Your code here
         self.calc_heuristic(brd)
+        self.player = brd.player
+        return self.minimax(brd)
 
-        return np.random.randint(0, brd.w-1)
-    
     # Get the successors of the given board.
     #
     # PARAM [board.Board] brd: the board state
@@ -55,201 +58,331 @@ class AlphaBetaAgent(agent.Agent):
             # (This internally changes nb.player, check the method definition!)
             nb.add_token(col)
             # Add board to list of successors
-            succ.append((nb,col))
+            succ.append((nb, col))
         return succ
 
-
-# ========================== MINIMAX RELATED ===============================
+    # ========================== MINIMAX RELATED ===============================
 
     def minimax(self, brd):
+        print("Running minimax")
+        print("My name is: " + str(self.name))
         # Calculate the numeric best value
-        best_val = self.get_max(brd)
+        # best_val = self.get_max(brd)
 
+        depth = self.m_max_depth
         possible_moves = self.get_successors(brd)
+
         sorted_possible_moves = self.sort_moves_by_huer(possible_moves)
 
-        best_move = None
+        best_move = sorted_possible_moves[0]
+        best_val = -float("Infinity")
         for move in sorted_possible_moves:
-            if self.calc_heuristic(move[0]) == best_val:
-                # The second value in the tuple is the column number to enter your disc
+            val = self.get_min(move[0], float('inf'), -float('inf'), depth)
+            if val > best_val:
                 best_move = move[1]
-                break
+                best_val = val
 
-        # Return the column number
-        if best_move is None:
-            print("ERROR no best move found...")
         return best_move
 
-    def get_max(self, brd):
+        # sorted_possible_moves = self.sort_moves_by_huer(possible_moves)
+
+        # best_move = None
+        # for move in sorted_possible_moves:
+        #     if self.calc_heuristic(move[0]) == best_val:
+        #         # The second value in the tuple is the column number to enter your disc
+        #         best_move = move[1]
+        #         break
+
+        # Return the column number
+
+    def get_max(self, brd, alpha, beta, depth):
+        outcome = brd.get_outcome()
+        if outcome != 0:
+            return -float('inf')
+
         # Check for a terminal state (list of free_cols is empty)
         if not brd.free_cols():
-            return self.calc_heuristic(brd)
+            return 0
 
-        # Set the max value beta to a value of negative inf
-        beta = -1*float('inf')
+        if depth == 0:
+            return self.calc_heuristic(brd)
 
         # Get a list of sorted possible moves
         possible_moves = self.get_successors(brd)
         sorted_possible_moves = self.sort_moves_by_huer(possible_moves)
-
+        val = -float('inf')
         for move in sorted_possible_moves:
-            beta = max(beta, self.get_min(move))
-        return beta
+            val = max(val, self.get_min(move[0], alpha, beta, depth -1))
+            beta = max(val, beta)
+            if beta > alpha:
+                return val
+        return val
 
-    def get_min(self, brd):
+    def get_min(self, brd, alpha, beta, depth):
+        if brd.get_outcome() != 0:
+            return float('inf')
         # Check for a terminal state (list of free_cols is empty)
         if not brd.free_cols():
-            return self.calc_heuristic(brd)
+            return 0
 
-        # Set the min value alpha to a value of inf
-        alpha = float('inf')
+        if depth == 0:
+            return self.calc_heuristic(brd)
 
         # Get a list of sorted possible moves
         possible_moves = self.get_successors(brd)
         # Reverse the sorted moves so that the worst board configuration is searched first
         sorted_possible_moves = self.sort_moves_by_huer(possible_moves)[::-1]
-
+        val = float('inf')
         for move in sorted_possible_moves:
-            alpha = max(alpha, self.get_min(move))
-        return alpha
+            val = min(val, self.get_max(move[0], alpha, beta, depth - 1))
+            alpha = min(val, beta)
+            if alpha < beta:
+                return val
+        return val
 
     def sort_moves_by_huer(self, possible_moves):
-        q = PriorityQueue()
         sorted_moves = []
 
         for move in possible_moves:
-            q.put((self.calc_heuristic(move[0]), move[0]))
+            sorted_moves.append((self.calc_heuristic(move[0]), move))
 
-        while not q.empty():
-            q_move = q.get()
-            sorted_moves.append(q_move[1])
+        sorted_moves.sort(key=self.sortByHeur)
 
-        return sorted_moves
+        final_sorted_moves = []
+
+        for move in sorted_moves:
+            final_sorted_moves.append(move[1])
+            # print("Heuristic: " + str(move[0]))
+
+        return final_sorted_moves
+
+    def sortByHeur(self, val):
+        return val[0]
         
 
     # ============================ END MINIMAX =================================
     # ==========================================================================
-        
-    # Calculate the heuristic for a given board space
-    #
-    # PARAM [board.Board] brd: the board state
-    # RETURN [int]: the heuristic for the given board, such that a higher score correlates to a preferable board 
-    #
+
+    # ========================= ILONA HEURISTIC RELATED ==============================
+    def calc_heuristic(self, brd):
+        # heuristic_total = 0
+        self_heuristic_total = 0
+        opponent_heuristic_total = 0
+        free_cols = brd.free_cols()
+
+        me = self.player
+        opponent = -1
+        if me == 1:
+            opponent = 2
+        else:
+            opponent = 1
+
+        for x in free_cols:
+            for y in range(brd.h):
+                current_cell = brd.board[y][x]
+
+                if current_cell == 0:
+                    # heuristic_total += 1
+                    # heuristic_total += self.search_neighbors_linear(brd, x, y, 1, 0, me, opponent) #horizontal right
+                    # heuristic_total += self.search_neighbors_linear(brd, x, y, -1, 0, me, opponent) #horizontal left
+                    # heuristic_total += self.search_neighbors_linear(brd, x, y, 0, 1, me, opponent) #vertical (up)
+                    # heuristic_total += self.search_neighbors_linear(brd, x, y, 0, -1, me, opponent) #vertical (down)
+                    # heuristic_total += self.search_neighbors_linear(brd, x, y, 1, 1, me, opponent) #diagonal up, right
+                    # heuristic_total += self.search_neighbors_linear(brd, x, y, 1, -1, me, opponent) #diagonal down, right
+                    # heuristic_total += self.search_neighbors_linear(brd, x, y, -1, -1, me, opponent) #diagonal down, left
+                    # heuristic_total += self.search_neighbors_linear(brd, x, y, -1, 1, me, opponent) #diagonal up, right
+                    
+                    self_heuristic_total += self.search_neighbors_linear(brd, x, y, 1, 0, me, opponent) #horizontal right
+                    self_heuristic_total += self.search_neighbors_linear(brd, x, y, -1, 0, me, opponent) #horizontal left
+                    self_heuristic_total += self.search_neighbors_linear(brd, x, y, 0, 1, me, opponent) #vertical (up)
+                    self_heuristic_total += self.search_neighbors_linear(brd, x, y, 0, -1, me, opponent) #vertical (down)
+                    self_heuristic_total += self.search_neighbors_linear(brd, x, y, 1, 1, me, opponent) #diagonal up, right
+                    self_heuristic_total += self.search_neighbors_linear(brd, x, y, 1, -1, me, opponent) #diagonal down, right
+                    self_heuristic_total += self.search_neighbors_linear(brd, x, y, -1, -1, me, opponent) #diagonal down, left
+                    self_heuristic_total += self.search_neighbors_linear(brd, x, y, -1, 1, me, opponent) #diagonal up, right
+
+                    opponent_heuristic_total += self.search_neighbors_linear(brd, x, y, 1, 0, me, opponent) #horizontal right
+                    opponent_heuristic_total += self.search_neighbors_linear(brd, x, y, -1, 0, me, opponent) #horizontal left
+                    opponent_heuristic_total += self.search_neighbors_linear(brd, x, y, 0, 1, me, opponent) #vertical (up)
+                    opponent_heuristic_total += self.search_neighbors_linear(brd, x, y, 0, -1, me, opponent) #vertical (down)
+                    opponent_heuristic_total += self.search_neighbors_linear(brd, x, y, 1, 1, me, opponent) #diagonal up, right
+                    opponent_heuristic_total += self.search_neighbors_linear(brd, x, y, 1, -1, me, opponent) #diagonal down, right
+                    opponent_heuristic_total += self.search_neighbors_linear(brd, x, y, -1, -1, me, opponent) #diagonal down, left
+                    opponent_heuristic_total += self.search_neighbors_linear(brd, x, y, -1, 1, me, opponent) #diagonal up, right
+
+        # total_heur = self_heuristic_total - opponent_heuristic_total
+
+        # return total_heur
+        return self_heuristic_total
+
+    def search_neighbors_linear(self, brd, x, y, dx, dy, me, opponent):
+        heuristic_total_linear = 0
+        count_in_row = 0
+
+        for i in range(1, brd.n):
+            if ((y + dy * i) > 0) and ((x+dx*i) > 0 and ((y+dy*i) < brd.h) and ((x+dx*i) < brd.w)):
+                current = brd.board[y + dy * i][x + dx * i]
+                if (current == 0) and (heuristic_total_linear == 0):
+                    return heuristic_total_linear #this is not of interest because it is open next to the first open
+                # if (current != self.name) and (heuristic_total_linear == 0):
+                if (current != me) and (heuristic_total_linear == 0):
+                    return heuristic_total_linear #this is not of interest because it is not us next to the first open space
+                # if current == self.name:
+                if current == me:
+                    count_in_row += 1
+                    heuristic_total_linear += 100 #100 pts to us because it is us next to an open or is in row next to an open
+                if current == 0:
+                    break #break but save the points because this is sick
+                # elif current != self.name:
+                if current == opponent:
+                    heuristic_total_linear = 0
+                    break #opponent is within n, this sucks, we can't win by playing this free spot
+
+        if count_in_row < brd.n-1:
+            last_in_x = x + count_in_row * dx
+            last_in_y = y + count_in_row * dy
+            for i in range(brd.n - count_in_row):
+                if ((last_in_y + dy * i) > 0) and ((last_in_x+dx*i) > 0 and ((last_in_y+dy*i) < brd.h) and ((last_in_x+dx*i) < brd.w)):
+                    current = brd.board[last_in_y + i*dy][last_in_x + i*dx]
+                    if current == 0:
+                        heuristic_total_linear += 50 #the next one is open, sick
+                    # if current == self.name:
+                    if current == me:
+                        heuristic_total_linear += 100 #the next one is me, SICKER
+                    # elif current != self.name:
+                    if current == opponent:
+                        heuristic_total_linear = 0 #not sicko, this is not me and not open so i can't get n at all
+                        break
+
+        # print(heuristic_total_linear)
+
+        return heuristic_total_linear
+
+
+    # ============================ END MINIMAX =================================
+    # ==========================================================================
+
+    # ========================= CRAIGIE HEURISTIC RELATED ==============================
+
     # def calc_heuristic(self, brd):
+    #     # Heuristic will be = your board score - opponent board score
+    #     self_score = self.get_player_score(brd, 2)
+    #     # print("Self score calculated: " + str(self_score))
+    #     opponent_score = self.get_player_score(brd, 1)
+    #     # print("Opponent score calculated: " + str(opponent_score))
 
-    #     heuristic_total = 0
+    #     heur = self_score - opponent_score
+    #     # print("Heuristic Value (-opponent_leaning +self_leaning): " + str(heur))
+    #     return heur
 
-    #     freecols = brd.free_cols()  #the free cols, to go thru columns with only open moves
+    # def get_player_score(self, brd, player):
+    #     valid_rows = self.get_valid_rows(brd)
+    #     player_score = 0
 
-    #     for col in freecols: # go thru all cols that contain a free col - we are not super interested in filled spaces
-    #         for row in range(0, brd.h):
-    #             current_cell = brd.board[col][row]
-                
-    #             if(current_cell == 0):  # it is a free space and we need to rank its value
-    #                 heuristic_total += 1
-
-    #                 # heuristic_total += self.search_neighbors_linear(brd, row, col, dx, dy)
-
-    #                 # heuristic_total += self.search_neighbors_break(brd)
-
-    #                 # if the cell is an open space, I want to look around and see what the neighbors are
-    #                 # if a neighbor is free, I'm not super interested - add 1 point, because there is space for future moves
-    #                 # I will go nearby in each direction until I see a different cell other than mine
-    #                 # if the next cell is my opponent's, ick - 0 points
-    #                 # if the next cell is mine, +10 points
-    #                 # will be a total of 100*(n-1) max points for how many are in a row there
-    #                 heuristic_total += self.search_neighbors_linear(brd, row, col, 1, 0) #horizontal right
-    #                 heuristic_total += self.search_neighbors_linear(brd, row, col, -1, 0) #horizontal left
-    #                 heuristic_total += self.search_neighbors_linear(brd, row, col, 0, 1) #vertical (up)
-    #                 heuristic_total += self.search_neighbors_linear(brd, row, col, 0, -1) #vertical (down)
-    #                 heuristic_total += self.search_neighbors_linear(brd, row, col, 1, 1) #diagonal up, right
-    #                 heuristic_total += self.search_neighbors_linear(brd, row, col, 1, -1) #diagonal down, right
-    #                 heuristic_total += self.search_neighbors_linear(brd, row, col, -1, -1) #diagonal down, left
-    #                 heuristic_total += self.search_neighbors_linear(brd, row, col, -1, 1) #diagonal up, right
-
-    #                 # I will need a separate loop to check for if the space is between two of my own, because then I like it,
-    #                 #   especially if both of the sides add to n-1 in total, or n if I move to that free spot!!
-    #                 # this type of spot should also be worth 10*(n-1)
-    #                 heuristic_total += self.search_neighbors_break(brd, row, col, 1)
-    #                 heuristic_total += self.search_neighbors_break(brd, row, col, -1)
-    #                 heuristic_total += self.search_neighbors_break(brd, row, col, 0)
-
-    #     return heuristic_total
-
-    # def search_neighbors_linear(self, brd, row, col, dx, dy):
-    #     heuristic_total_linear = 0
-    #     count_in_row = 0
-
-    #     for i in range(0, brd.n):
-    #         if (col + i*dy) < brd.w and (col + i*dy) > 0 and (row + i*dx) < brd.h and (row + i*dx) > 0:  # this checks that it is still in-bounds
-    #             current = brd.board[col + i*dy][row + i*dx]
-    #             if current == self.name:
-    #                 count_in_row += 1
-    #             else: #it is the other opponent or free - we're done investigating how many are in a row
-    #                 break
+    #     for row in valid_rows:
+    #         row_cnt = 0
+    #         for row_dir in [row, row[::-1]]:
+    #             for r in row_dir:
+    #                 if r[0] == player:
+    #                     row_cnt = row_cnt + 1
+    #                     if row_cnt == brd.n:
+    #                         player_score = player_score + 9000
+    #                         return player_score
+    #                 # added by ilona to try to catch the case that it is a free spot AND row count is n-1 to get the immediate win
+    #                 # if r[0] == 0 and row_cnt == (brd.n-1):
+    #                 #     return 
+    #                 ###
+    #                 if r[0] == 0 and row_cnt != 0:
+    #                     player_score = player_score + row_cnt*(brd.h-self.get_pos_height(brd, r[1]))
+    #                     row_cnt = 0
         
-    #     heuristic_total_linear = count_in_row * 1000 #1000 pts for each token
+    #     return player_score
 
-    #     if count_in_row < brd.n: #see how many free spaces surround the amt here
-    #         current = brd.board[col][row]
-    #         last_in_row_col = col+count_in_row*dy
-    #         last_in_row_row = row+count_in_row*dx
-    #         for i in range(0, brd.n - count_in_row + 1):
-    #             if (last_in_row_col + i*dy) < brd.w and (last_in_row_col + i*dy) > 0 and (last_in_row_row + i*dx) < brd.h and (last_in_row_row + i*dx) > 0:
-    #                 current = brd.board[last_in_row_col + i*dy][last_in_row_row + i*dx]
-    #                 if current == 0 :
-    #                     heuristic_total_linear += 500 #add 500 pts for each open space
-    #                 elif current != self.name: #this is the other player!! we can't make a full row :( - null tthe points given to this
-    #                     heuristic_total_linear = 0
-    #                     break
+    # def get_pos_height(self, brd, pos):
+    #     np_board = np.array(brd.board)
+    #     height = 0
+    #     while pos[0] >= 0 and np_board[pos[0], pos[1]] == 0:
+    #         pos = (pos[0]-1, pos[1])
+    #         height = height + 1
+    #     return height-1
 
-    #     return heuristic_total_linear
+    # def get_valid_rows(self, brd):
+    #     # check vertical rows
+    #     # check horizontal rows
+    #     # check diagonal right
+    #     # check diagonal left
 
-    # def search_neighbors_break(self, brd, row, col, dy):
-    #     heuristic_total_break = 0
-    #     count_left = 0
-    #     count_right = 0
+    #     np_board = np.array(brd.board)
+    #     # A collection of all rows (and their states) in which a connect-n is possible
+    #     valid_rows = []
 
-    #     # curr_row = row
-    #     # curr_col = col
+    #     # vertical rows
+    #     for w in range(brd.w):
+    #         tmp_row = []
+    #         for h in range(brd.h):
+    #             tmp_row.append((np_board[h, w], (h, w)))
+    #         valid_rows.append(tmp_row)
 
-    #     #loop "left"
-    #     for i in range(0, brd.n):
-    #         if (col + i*dy) < brd.w and (col + i*dy) > 0 and (row -i) < brd.h and (row -i) > 0:  # this checks that it is still in-bounds
-    #             current_cell = brd.board[col + i*dy][row-i]
-    #             if current_cell == self.name :
-    #                 count_left += 1
-    #                 heuristic_total_break += 50
-    #             elif current_cell == 0:
-    #                 heuristic_total_break += 25
-    #                 break
-    #             else:
-    #                 heuristic_total_break = 0
-    #                 break
+    #     # horizontal rows
+    #     for h in range(brd.h):
+    #         tmp_row = []
+    #         for w in range(brd.w):
+    #             tmp_row.append((np_board[h, w], (h, w)))
+    #         valid_rows.append(tmp_row)
 
-    #     #loop "right"
-    #     for i in range(0, brd.n):
-    #         if (col + i*dy) < brd.w and (col + i*dy) > 0 and (row + i) < brd.h and (row + i) > 0:  # this checks that it is still in-bounds
-    #             current_cell = brd.board[col + i*dy][row+i]
-    #             if current_cell == self.name :
-    #                 count_right += 1
-    #                 heuristic_total_break += 50
-    #             elif current_cell == 0:
-    #                 heuristic_total_break += 25
-    #                 break
-    #             else:
-    #                 heuristic_total_break = 0
-    #                 break
-                
-    #     if count_right == brd.n-1:
-    #         heuristic_total_break += 1000
-    #     if count_left == brd.n-1:
-    #         heuristic_total_break += 1000
-    #     if count_right + count_left == brd.n-1:
-    #         heuristic_total_break += 1000
+    #     # diagonal right
+    #     for h in range(brd.h - (brd.n - 1)):
+    #         tmp_row = []
+    #         curr = (h, 0)  # starts from w = 0
+    #         # Check to see the diagonal can ascend unbounded else bound to size of min axis
+    #         if brd.w > brd.h - h:
+    #             diagonal_width = brd.h - h
+    #         else:
+    #             diagonal_width = brd.w
+    #         for w in range(diagonal_width):
+    #             tmp_row.append((np_board[curr[0], curr[1]], curr))
+    #             curr = (curr[0]+1, curr[1]+1)
+    #         valid_rows.append(tmp_row)
+    #     for w in range(brd.w - (brd.n - 1))[1:]:  # The diagonal at 0,0 if covered by the loop above
+    #         tmp_row = []
+    #         curr = (0, w)  # current always starts at h = 0
+    #         # Check to see the diagonal can ascend unbounded else bound to size of min axis
+    #         if brd.h > brd.w - w:
+    #             diagonal_width = brd.w - w
+    #         else:
+    #             diagonal_width = brd.h
+    #         for h in range(diagonal_width):
+    #             tmp_row.append((np_board[curr[0], curr[1]], curr))
+    #             curr = (curr[0]+1, curr[1]+1)
+    #         valid_rows.append(tmp_row)
 
+    #     # diagonal left
+    #     for h in range(brd.h - (brd.n - 1)):
+    #         tmp_row = []
+    #         curr = (h, brd.w-1)  # starts from w = brd.w
+    #         # Check to see the diagonal can ascend unbounded else bound to size of min axis
+    #         if brd.w > brd.h - h:
+    #             diagonal_width = brd.h - h
+    #         else:
+    #             diagonal_width = brd.w
+    #         for w in range(diagonal_width):
+    #             tmp_row.append((np_board[curr[0], curr[1]], curr))
+    #             curr = (curr[0]+1, curr[1]-1)
+    #         valid_rows.append(tmp_row)
+    #     for w in [brd.w - x for x in range(brd.w - (brd.n - 1))[1:]]:  # diagonal at 0,0 if covered by the loop above
+    #         tmp_row = []
+    #         curr = (0, w-1)  # current always starts at h = 0
+    #         # Check to see the diagonal can ascend unbounded else bound to size of min axis
+    #         if brd.h > w:
+    #             diagonal_width = w
+    #         else:
+    #             diagonal_width = brd.h
+    #         for h in range(diagonal_width):
+    #             tmp_row.append((np_board[curr[0], curr[1]], curr))
+    #             curr = (curr[0]+1, curr[1]-1)
+    #         valid_rows.append(tmp_row)
+            
+    #     return valid_rows
 
-    #     return heuristic_total_break
-
-
-    
+        # =========================== END HEURISTIC ================================
+        # ====================================================================
