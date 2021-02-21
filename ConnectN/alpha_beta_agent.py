@@ -18,7 +18,7 @@ class AlphaBetaAgent(agent.Agent):
     def __init__(self, name, max_depth):
         super().__init__(name)
         # Max search depth
-        self.max_depth = max_depth
+        self.m_max_depth = max_depth
 
     # Pick a column.
     #
@@ -61,15 +61,18 @@ class AlphaBetaAgent(agent.Agent):
     # ========================== MINIMAX RELATED ===============================
 
     def minimax(self, brd):
+        print("Running minimax")
         # Calculate the numeric best value
         # best_val = self.get_max(brd)
 
-        depth = 6
+        depth = self.m_max_depth
         possible_moves = self.get_successors(brd)
 
-        best_move = possible_moves[0]
+        sorted_possible_moves = self.sort_moves_by_huer(possible_moves)
+
+        best_move = sorted_possible_moves[0]
         best_val = -float("Infinity")
-        for move in possible_moves:
+        for move in sorted_possible_moves:
             val = self.get_min(move[0], float('inf'), -float('inf'), depth)
             if val > best_val:
                 best_move = move[1]
@@ -77,7 +80,7 @@ class AlphaBetaAgent(agent.Agent):
 
         return best_move
 
-        sorted_possible_moves = self.sort_moves_by_huer(possible_moves)
+        # sorted_possible_moves = self.sort_moves_by_huer(possible_moves)
 
         # best_move = None
         # for move in sorted_possible_moves:
@@ -87,9 +90,6 @@ class AlphaBetaAgent(agent.Agent):
         #         break
 
         # Return the column number
-        if best_move is None:
-            print("ERROR no best move found...")
-        return best_move
 
     def get_max(self, brd, alpha, beta, depth):
         outcome = brd.get_outcome()
@@ -137,17 +137,37 @@ class AlphaBetaAgent(agent.Agent):
         return val
 
     def sort_moves_by_huer(self, possible_moves):
-        q = PriorityQueue()
+        print("Sorting the heuristics")
+        # q = PriorityQueue()
+        # sorted_moves = []
+
+        # for move in possible_moves:
+        #     # print(int(self.calc_heuristic(move[0])))
+        #     # q.put((self.calc_heuristic(move[0]), move[0]))
+        #     q.put((self.calc_heuristic(move[0]), 'Hello'))
+
+        # while not q.empty():
+        #     q_move = q.get()
+        #     sorted_moves.append(q_move[1])
+        #     print(q_move[0])
+
         sorted_moves = []
 
         for move in possible_moves:
-            q.put((self.calc_heuristic(move[0]), move[0]))
+            sorted_moves.append((self.calc_heuristic(move[0]), move))
 
-        while not q.empty():
-            q_move = q.get()
-            sorted_moves.append(q_move[1])
+        sorted_moves.sort(key=self.sortByHeur)
 
-        return sorted_moves
+        final_sorted_moves = []
+
+        for move in sorted_moves:
+            print("Heuristic:" + str(move[0]))
+            final_sorted_moves.append(move[1])
+
+        return final_sorted_moves
+
+    def sortByHeur(self, val):
+        return val[0]
         
 
     # ============================ END MINIMAX =================================
@@ -178,10 +198,17 @@ class AlphaBetaAgent(agent.Agent):
                 for r in row_dir:
                     if r[0] == player:
                         row_cnt = row_cnt + 1
+                        if row_cnt == brd.n:
+                            player_score = player_score + 9000
+                            return player_score
+                    # added by ilona to try to catch the case that it is a free spot AND row count is n-1 to get the immediate win
+                    # if r[0] == 0 and row_cnt == (brd.n-1):
+                    #     return 
+                    ###
                     if r[0] == 0 and row_cnt != 0:
                         player_score = player_score + row_cnt*(brd.h-self.get_pos_height(brd, r[1]))
                         row_cnt = 0
-
+        
         return player_score
 
     def get_pos_height(self, brd, pos):
@@ -225,7 +252,6 @@ class AlphaBetaAgent(agent.Agent):
                 diagonal_width = brd.h - h
             else:
                 diagonal_width = brd.w
-# ??? loop not used
             for w in range(diagonal_width):
                 tmp_row.append((np_board[curr[0], curr[1]], curr))
                 curr = (curr[0]+1, curr[1]+1)
@@ -238,7 +264,6 @@ class AlphaBetaAgent(agent.Agent):
                 diagonal_width = brd.w - w
             else:
                 diagonal_width = brd.h
-                # loop not used????
             for h in range(diagonal_width):
                 tmp_row.append((np_board[curr[0], curr[1]], curr))
                 curr = (curr[0]+1, curr[1]+1)
@@ -253,7 +278,6 @@ class AlphaBetaAgent(agent.Agent):
                 diagonal_width = brd.h - h
             else:
                 diagonal_width = brd.w
-# loop not used?
             for w in range(diagonal_width):
                 tmp_row.append((np_board[curr[0], curr[1]], curr))
                 curr = (curr[0]+1, curr[1]-1)
