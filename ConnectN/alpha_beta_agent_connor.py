@@ -81,9 +81,9 @@ class AlphaBetaAgent(agent.Agent):
             if val > best_val:
                 best_move = move[1]
                 best_val = val
-            
-            
 
+        if isinstance(best_move,tuple):
+            best_move = best_move[1]
 
         return best_move
 
