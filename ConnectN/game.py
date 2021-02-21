@@ -71,9 +71,11 @@ class Game(object):
     # RETURN [int]: The game outcome.
     #               1 for Player 1, 2 for Player 2, and 0 for no winner
     def timed_go(self, limit):
+        print("Playing timed go")
         # Current player
         p = 0
         while self.board.free_cols() and self.board.get_outcome() == 0:
+            self.board.print_it()
             # Get start time
             st = time.time()
             # Make move and copy board so player can't modify it
@@ -82,18 +84,30 @@ class Game(object):
             et = time.time() - st
             # Is the move legal and within the time limit?
             if (not x in self.board.free_cols()) or (et > limit):
+                print("Invalid move or time exceeded")
+                print("Estimated time elapsed: " + str(et))
+                print("X given: " + str(x))
                 outcome = 1
                 if p == 0:
                     outcome = 2
                 return outcome
             # Legal move, add token there
             self.board.add_token(x)
+            print("X given: " + str(x))
             # Switch player
             if p == 0:
                 p = 1
             else:
                 p = 0
         # Return game outcome
+        self.board.print_it()
+        outcome = self.board.get_outcome()
+        print("Game over!")
+        if outcome == 0:
+            print("It's a tie!")
+        else:
+            print(self.players[outcome-1].name, "won!")
+
         return self.board.get_outcome()
 
     # Execute a timed game.
