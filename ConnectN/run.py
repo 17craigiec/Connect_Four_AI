@@ -57,9 +57,41 @@ random.seed(1)
 g = game.Game(7, # width
               6, # height
               4, # tokens in a row to win
-              aba.AlphaBetaAgent("IlonaAlphaBeta", 4),   # player 1
+              aba.AlphaBetaAgent("IlonaAlphaBeta", 3),   # player 1
               abac.AlphaBetaAgent("ConnorAlphaBeta", 4))   # player 2
 
 # Execute the game
 # outcome = g.go()
+
+
+# all the things I need to play
+
+# ilona ab vs random - ilona 2nd
+# g = game.Game(10, # width
+#               8, # height
+#               5, # tokens in a row to win
+#               agent.RandomAgent("random"),        # player 1
+#               aba.AlphaBetaAgent("IlonaAlphaBeta", 2)) # player 2
+
+# ilona ab vs random - ilona 1st
+# g = game.Game(7, # width
+#               6, # height
+#               4, # tokens in a row to win
+#               aba.AlphaBetaAgent("IlonaAlphaBeta", 4),        # player 1
+#               agent.RandomAgent("random")) # player 2
+
+# connor ab vs random - connor 2nd
+# g = game.Game(10, # width
+#               8, # height
+#               5, # tokens in a row to win
+#               agent.RandomAgent("random"),        # player 1
+#               abac.AlphaBetaAgent("ConnorAlphaBeta", 7)) # player 2
+
+# connor ab vs random - connor 1st
+# g = game.Game(7, # width
+#               6, # height
+#               4, # tokens in a row to win
+#               abac.AlphaBetaAgent("ConnorAlphaBeta", 4),        # player 1
+#               agent.RandomAgent("random")) # player 2
+
 outcome = g.timed_go(15)

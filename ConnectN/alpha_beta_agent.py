@@ -135,7 +135,7 @@ class AlphaBetaAgent(agent.Agent):
         val = float('inf')
         for move in sorted_possible_moves:
             val = min(val, self.get_max(move[0], alpha, beta, depth - 1))
-            alpha = min(val, beta)
+            alpha = min(val, alpha)
             if alpha < beta:
                 return val
         return val

@@ -83,6 +83,7 @@ class AlphaBetaAgent(agent.Agent):
                 best_val = val
 
         if isinstance(best_move,tuple):
+            print(best_val)
             best_move = best_move[1]
 
         return best_move
@@ -117,8 +118,8 @@ class AlphaBetaAgent(agent.Agent):
         for move in sorted_possible_moves:
             val = max(val, self.get_min(move[0], alpha, beta, depth -1))
             beta = max(val, beta)
-            if beta > alpha:
-                return val
+            if beta >= alpha:
+                break
         return val
 
     def get_min(self, brd, alpha, beta, depth):
@@ -138,9 +139,9 @@ class AlphaBetaAgent(agent.Agent):
         val = float('inf')
         for move in sorted_possible_moves:
             val = min(val, self.get_max(move[0], alpha, beta, depth - 1))
-            alpha = min(val, beta)
-            if alpha < beta:
-                return val
+            alpha = min(val, alpha)
+            if alpha <= beta:
+                break
         return val
 
     def sort_moves_by_huer(self, possible_moves):
@@ -268,10 +269,15 @@ class AlphaBetaAgent(agent.Agent):
     # ========================= CRAIGIE HEURISTIC RELATED ==============================
 
     def calc_heuristic(self, brd):
+        if self.player == 1:
+            opponent = 2
+        else:
+            opponent = 1
+
         # Heuristic will be = your board score - opponent board score
-        self_score = self.get_player_score(brd, 2)
+        self_score = self.get_player_score(brd, self.player)
         # print("Self score calculated: " + str(self_score))
-        opponent_score = self.get_player_score(brd, 1)
+        opponent_score = self.get_player_score(brd, opponent)
         # print("Opponent score calculated: " + str(opponent_score))
 
         heur = self_score - opponent_score
