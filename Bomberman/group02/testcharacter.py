@@ -13,11 +13,39 @@ class TestCharacter(CharacterEntity):
 
     def do(self, wrld):
         # Your code here
-        
+        # print("I am Located at ("+str(self.char_x)+", "+str(self.char_y)+")")
+
         print("\n\n")
-        next_move = self.nextMoveToExit(wrld)
+        # next_move = self.nextMoveToExit(wrld)
+        next_move = self.nextMoveHeuristic(wrld)
+
         self.moveChar(wrld, next_move[0], next_move[1])
         print("Monsters Located at: "+str(self.locateMonsters(wrld)))
+        print("distance to EXIT is: "+str(self.distanceToExit(wrld, self.char_x, self.char_y)))
+
+
+    def nextMoveHeuristic(self, wlrd):
+        best_option = ((0,0), -1)
+        for neigh in self.getNeighbors(wlrd, self.char_x, self.char_y):
+            h = self.calcHeuristic(wlrd, neigh[0], neigh[1])
+            if h > best_option[1]:
+                best_option = (neigh, h)
+
+        return (best_option[0][0]-self.char_x, best_option[0][1]-self.char_y)
+
+
+    def calcHeuristic(self, wrld, x, y):
+        monsters = self.distanceToMonsters(wrld, x, y)
+        if monsters:
+            dist_from_monsters = 0
+        else:
+            dist_from_monsters = 1
+
+        for m in monsters:
+            dist_from_monsters += m[1]
+
+        print(-20/dist_from_monsters)
+        return (-10/dist_from_monsters)+(100-self.distanceToExit(wrld, x, y))
 
 
     def nextMoveToExit(self, wrld):
@@ -47,6 +75,34 @@ class TestCharacter(CharacterEntity):
         return (0,0)
 
 
+    def distanceToExit(self, wrld, x, y):
+        # Simple BFS to poll the exit
+        q = [(x, y)]
+        visited = []
+        path = {}
+
+        while q:
+            cur = q.pop(0)
+            visited.append(cur)
+
+            if wrld.exit_at(cur[0],cur[1]):
+                # Find next movement
+                dist = 1
+                tmp = cur
+                while tmp != (x, y):
+                    dist = dist + 1
+                    tmp = path[tmp]
+                return dist
+                
+            for neigh in self.getNeighbors(wrld, cur[0], cur[1]):
+                if neigh not in visited and neigh not in q:
+                    q.append(neigh)
+                    path[neigh] = cur
+
+        print("!!! No path to EXIT detected !!!")
+        return -1
+
+
     def locateMonsters(self, wrld):
         # Simple BFS to poll the monsters
         monsters = []
@@ -62,6 +118,37 @@ class TestCharacter(CharacterEntity):
                 dist = 1
                 tmp = cur
                 while tmp != (self.char_x, self.char_y):
+                    dist = dist + 1
+                    tmp = path[tmp]
+                monsters.append( ((cur[0], cur[1]), dist) )
+
+            # break early if both monsters are found
+            if len(monsters) >= 2:
+                return monsters
+
+            for neigh in self.getNeighbors(wrld, cur[0], cur[1]):
+                if neigh not in visited and neigh not in q:
+                    q.append(neigh)
+                    path[neigh] = cur
+
+        return monsters
+
+
+    def distanceToMonsters(self, wrld, x, y):
+        # Simple BFS to poll the monsters
+        monsters = []
+        q = [(x, y)]
+        visited = []
+        path = {}
+
+        while q:
+            cur = q.pop(0)
+            visited.append(cur)
+            # If cur holds a monster log its location
+            if wrld.monsters_at(cur[0], cur[1]) != None:
+                dist = 1
+                tmp = cur
+                while tmp != (x, y):
                     dist = dist + 1
                     tmp = path[tmp]
                 monsters.append( ((cur[0], cur[1]), dist) )
