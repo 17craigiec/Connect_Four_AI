@@ -9,6 +9,38 @@ from game import Game
 # TODO This is your code!
 sys.path.insert(1, '../groupNN')
 
+def heuristic(locA, locB) -> float:
+    (x1, y1) = locA
+    (x2, y2) = locB
+    return abs(x1-x2) + abs(y1-y2)
+
+
+def Astar(graph, start, exit):
+    frontier = PriorityQueue()
+    frontier.put(start, 0)
+    lastLocation: Dict[exit] = {}
+    costSoFar: Dict[exit, float] = {}
+    lastLocation[start] = None
+    costSoFar[start] = 0
+
+    while not frontier.empty():
+        current: Location = frontier.get()
+
+        if current == exit:
+            break
+
+        for next in graph.neighbors(current):
+            newCost = costSoFar[current] + graph.cost(current, next)
+            if next not in costSoFar or newCost < costSoFar[next]:
+                costSoFar[next] = newCost
+                priority = newCost + heuristic(next, exit)
+                frontier.put(next, priority)
+                lastLocation[next] = current
+
+    return lastLocation, costSoFar
+
+
+
 # Uncomment this if you want the empty test character
 #from testcharacter import TestCharacter
 
