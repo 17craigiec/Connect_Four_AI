@@ -215,3 +215,58 @@ class TestCharacter(CharacterEntity):
         self.char_y = self.char_y + dy
         print("I am now at ("+str(self.char_x)+", "+str(self.char_y)+")")
         self.move(dx, dy)
+
+    # def __ge__(self, other):
+    #     if other > self:
+
+    def findWalls(self, wrld):
+        # Simple BFS to poll the walls
+        walls = []
+        q = [(self.char_x, self.char_y)]
+        visited = []
+        path = {}
+
+        while q:
+            current = q.pop(0)
+            visited.append(current)
+            # If cur holds a wall log its location
+            if wrld.walls_at(current[0], current[1]) != None:
+                dist = 1
+                tmp = current
+                while tmp != (self.char_x, self.char_y):
+                    dist = dist + 1
+                    tmp = path[tmp]
+                walls.append(((current[0], current[1]), dist))
+
+            # break early if both walls are found
+            if len(walls) >= 4:
+                return walls
+
+            for neigh in self.getNeighbors(wrld, current[0], current[1]):
+                if neigh not in visited and neigh not in q:
+                    q.append(neigh)
+                    path[neigh] = current
+
+        return monsters
+
+    def moveThruWall(self, wrld):
+        # find all the walls based on current location
+        walls = self.findWalls(wrld)
+        # identify wall closest to exit - valid moveable point, lowest y val (south)
+        wallToBomb = []
+        for wall in walls:
+            if walls[wall].y > wallToBomb[1]:
+                wallToBomb = [wall.x, wall.y]
+        # move to said wall
+        self.move(wallToBomb[0], wallToBomb[1])
+        # drop bomb against wall
+        self.char.drop_bomb()
+        # move diagonally while bomb explodes
+        self.move(x - 1, y + 1)
+        # wait for explosion - change to bomb time
+        while wrld.explosion_at(self.char_x, self.char_y):
+            # don't move
+            wait
+        # move back to bomb space
+        self.move(x + 1, y - 1)
+        return
