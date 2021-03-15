@@ -216,6 +216,32 @@ class TestCharacter(CharacterEntity):
         print("I am now at ("+str(self.char_x)+", "+str(self.char_y)+")")
         self.move(dx, dy)
 
+    def moveSouth2(self, wrld):
+        # Simple BFS move to a south most point
+        q = [(self.char_x, self.char_y)]
+        visited = []
+        path = {}
+        while q:
+            cur = q.pop(0)
+            visited.append(cur)
+            for neigh in self.getNeighbors(wrld, cur[0], cur[1]):
+                if neigh not in visited and neigh not in q:
+                    q.append(neigh)
+                    path[neigh] = cur
+        # Find next movement
+        south_most = (0, 0)
+        for v in visited:
+            if v[1] > south_most[1]:
+                south_most = v
+        print("SOUTH MOST: " + str(south_most))
+        if south_most[1] > self.char_y:
+            tmp = south_most
+            while path[tmp] != (self.char_x, self.char_y):
+                tmp = path[tmp]
+            return (tmp[0] - self.char_x, tmp[1] - self.char_y)
+        else:
+            return (0, 0)
+
     # def __ge__(self, other):
     #     if other > self:
 
@@ -265,6 +291,25 @@ class TestCharacter(CharacterEntity):
         self.move(x - 1, y + 1)
         # wait for explosion - change to bomb time
         while wrld.explosion_at(self.char_x, self.char_y):
+            # don't move
+            wait
+        # move back to bomb space
+        self.move(x + 1, y - 1)
+        nextMove = self.moveSouth2(wrld)
+        self.move(nextMove[0], nextMove[1])
+        return
+
+    def moveThruWall2(self, wrld):
+        # identify wall closest to exit - valid moveable point, lowest y val (south)
+        moveToWall = self.moveSouth2(wrld)
+        # move to said wall
+        self.move(moveToWall[0], wallToWall[1])
+        # drop bomb against wall
+        self.char.drop_bomb()
+        # move diagonally while bomb explodes
+        self.move(x - 1, y + 1)
+        # wait for explosion - change to bomb time
+        while wrld.explosion_at(moveToWall[0], moveToWall[1]):
             # don't move
             wait
         # move back to bomb space
