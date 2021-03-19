@@ -8,12 +8,22 @@ import random
 from game import Game
 from monsters.stupid_monster import StupidMonster
 
-# TODO This is your code!
+# This is your code!
 sys.path.insert(1, '../group02')
 from testcharacter import TestCharacter
 
 # Create the game
-random.seed(10) # TODO Change this if you want different random choices
+random.seed(10)
+# random.seed(20)
+# random.seed(30)
+# random.seed(40)
+# random.seed(50)
+# random.seed(60)
+# random.seed(70)
+# random.seed(80)
+# random.seed(90)
+# random.seed(100)
+
 g = Game.fromfile('map.txt')
 g.add_monster(StupidMonster("stupid", # name
                             "S",      # avatar
@@ -21,7 +31,7 @@ g.add_monster(StupidMonster("stupid", # name
 ))
 
 # TODO Add your character
-g.add_character(TestCharacter("me", # name
+g.add_character(TestCharacter("Group02", # name
                               "C",  # avatar
                               0, 0  # position
 ))

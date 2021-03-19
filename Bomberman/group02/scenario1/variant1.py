@@ -6,7 +6,7 @@ sys.path.insert(1, '..')
 # Import necessary stuff
 from game import Game
 
-# TODO This is your code!
+# This is your code!
 sys.path.insert(1, '../group02')
 
 def heuristic(locA, locB) -> float:
@@ -50,10 +50,10 @@ from interactivecharacter import InteractiveCharacter
 # Create the game
 g = Game.fromfile('map.txt')
 
-# TODO Add your character
+# Add your character as test character
 
 # Uncomment this if you want the test character
-g.add_character(TestCharacter("me", # name
+g.add_character(TestCharacter("Group02", # name
                               "C",  # avatar
                               0, 0  # position
 ))

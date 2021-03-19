@@ -6,7 +6,7 @@ sys.path.insert(1, '..')
 # Import necessary stuff
 from game import Game
 
-# TODO This is your code!
+# This is your code!
 sys.path.insert(1, '../group02')
 from testcharacter import TestCharacter
 
@@ -14,11 +14,12 @@ from testcharacter import TestCharacter
 # Create the game
 g = Game.fromfile('map.txt')
 
-# TODO Add your character
-g.add_character(TestCharacter("me", # name
+# Add your character
+g.add_character(TestCharacter("Group02", # name
                               "C",  # avatar
                               0, 0  # position
 ))
 
 # Run!
-g.go()
+# g.go()
+g.go(1)
