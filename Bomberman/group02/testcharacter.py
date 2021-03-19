@@ -38,20 +38,14 @@ class TestCharacter(CharacterEntity):
     bomb_loc = (-1,-1)
     dangerous_locations = []
 
-    # list of neighboring coordinates to walls, should be updated after bomb  -- NOT USED ANYMORE
-    # cspace = []
-
-    # Function run at the start of each move
+    # Run each time TestCharacter is run - ultimately makes bomberman move according to best heuristic
     #
-    # PARAM type wrld, type name: here
-    # RETURN type: here
+    # PARAM [World] wrld: current world
+    # RETURN [NONE]
     def do(self, wrld):
-        # Your code here
-
         print("\n\n")
         next_move = self.nextMoveHeuristic(wrld)
 
-        ########### connor's bomb code 2 ##############
         # If no path to exit can be found aka next_move==(0,0), continue south untill a wall is encountered
         if next_move == (0,0) and self.bomb_timer == 0:
             self.place_bomb()
@@ -71,9 +65,11 @@ class TestCharacter(CharacterEntity):
 
         self.moveChar(wrld, next_move[0], next_move[1])
 
-
+    # Calculate heuristic of current bomberman location, and all immediate neighbors, choosing the best 
+    #
+    # PARAM [World[]] wrld: current world
+    # RETURN [tuple(int,int)]: (0,0) if the current bomberman location is somewhere a bomb should be placed.  Else returns a valid (x,y) movement direction for next best move.
     def nextMoveHeuristic(self, wrld):
-        #if i'm too close to a monster, run minimax
         distance_to_exit = self.distanceToExit(wrld, self.char_x, self.char_y)
         distances_to_mon = self.distanceToMonsters(wrld, getCharacterLoc(wrld))
         closest_monster = 999
@@ -87,25 +83,9 @@ class TestCharacter(CharacterEntity):
 
         monster_info = (None, 999)
         for m in distances_to_mon:
-            monTypes = self.getMonsterName(wrld, m[0][0], m[0][1])
             if m[1] < closest_monster:
                 closest_monster = m[1]
                 monster_info = m
-
-            # for mtype in monTypes:
-            #     if mtype == "stupid" and m[1] <= 3:
-            #         print("Too close to stupid monster!!")
-            #         best = self.ab_minimax(wrld, self.char_x, self.char_y, 2, True, float('-inf'), float('inf'))
-            #         print("THE BEST OF THE BEST: "+str(best))
-            #         best_option = (best, float('inf'))
-
-            #     elif mtype != "stupid" and m[1] <= 5:
-            #         print("Too close to smart monster!!!!")
-            #         print("Monster info:" + str(m[0]))
-            #         best = self.ab_minimax(wrld, self.char_x, self.char_y, 2, True, float('-inf'), float('inf'))
-            #         print("THE BEST OF THE BEST: "+str(best))
-            #         best_option = (best, float('inf'))
-
 
         # Check to see if there is no path to exit
         if self.isSouthMost(wrld) and self.isObstructed(monster_info, distance_to_exit) and self.bomb_timer == 0 and closest_monster > 2:
@@ -116,7 +96,10 @@ class TestCharacter(CharacterEntity):
 
         return next_move
 
-
+    # Find dangeous spots where bomb is blowing up
+    #
+    # PARAM [tuple(int, int)] bomb_loc: holds the (x,y) coordinate of the bomb that bomberman placed
+    # RETURN [list(tuple(int, iny))]: list of (x,y) coordinates where the bomb is currently exploding and we should not move into to avoid certain death
     def calcPotentiallyExplosiveLocations(self, bomb_loc):
         bomb_r = 4
         danger_zones = [bomb_loc]
@@ -127,7 +110,12 @@ class TestCharacter(CharacterEntity):
 
         return danger_zones
 
-
+    # Calculate the heuristic  of the given (x, y) position
+    #
+    # PARAM [World] wrld: current world
+    # PARAM [int] x: given x location on board
+    # PARAM [int] y: given y location on board
+    # RETURN [int]: heuristic of given (x,y) position by weighting and combining distance to monsters, distance to exit, and distance to walls
     def calcHeuristic(self, wrld, x, y):
         monsters = self.distanceToMonsters(wrld, (x, y))
         # This if statement is here to avoid div by 0
@@ -147,24 +135,8 @@ class TestCharacter(CharacterEntity):
                     # print("Monster type: " + str(mtype))
                     if mtype == "stupid":
                         monst_hur += -1000/pow(closest_monster[1],3)
-                    # elif mtype != "stupid" and self.distanceToExit(wrld, x, y) == -1:
-                    #     #make us play more aggressively when there is a wall we need to blow thru
-                    #     monst_hur += -1000/pow(closest_monster[1],3)
-                    # elif mtype == "selfpreserving":
-                    #     monst_hur += -1000/pow(closest_monster[1],2)
-                    # elif mtype == "aggressive":
-                    #     #subtract 1 by making it say "alright, they can see more so be wary"
-                    #     closer_dist = 0
-                    #     if closest_monster[1] > 1:
-                    #         closer_dist = closest_monster[1]-1
-                    #     else:
-                    #         closer_dist = closest_monster[1]
-                    #     monst_hur += -1000/pow(closer_dist,2)
                     elif mtype != "stupid":
                         monst_hur += -1000/pow(closest_monster[1],2)
-
-        # Heuristic driven from closeness to monster
-        # monst_hur = -1000/pow(closest_monster,4)
 
         # Make bomberman afriad of walls
         w = wrld.width()
@@ -184,14 +156,12 @@ class TestCharacter(CharacterEntity):
         exit_hur = 0
         if d != -1 and d < wrld.width():
             if not self.isObstructed(closest_monster, d):
-                print("NOT OBSTRUCTED")
                 exit_hur = 1000*(100-d)
             else:
                 exit_hur = 5*y + (wrld.width() -2*d + pow(3, -1*(d-5.5)))
         else:
             # If there is no path to exit, make it drift south
             exit_hur = 5*y
-
 
         bomb_hur = 0
         if y > self.bomb_loc[1]:
@@ -200,11 +170,14 @@ class TestCharacter(CharacterEntity):
         # Sum all huristic values
         total = monst_hur + exit_hur + wall_hur + bomb_hur
 
-        # print("total: "+str(total)+"  monst: "+str(monst_hur)+"  exit: "+str(exit_hur)+"  wall: "+str(wall_hur)+"  bomb: "+str(bomb_hur))
-
         return total
 
-
+    # Calculate a distance to the exit from given location
+    #
+    # PARAM [World] wrld: current world
+    # PARAM [int] x: given x location on board
+    # PARAM [int] y: given y location on board
+    # RETURN [int]: distance to exit by BFS if exit found, else return -1 because no path to exit detected 
     def distanceToExit(self, wrld, x, y):
         # Simple BFS to poll the exit
         q = [(x, y)]
@@ -229,10 +202,14 @@ class TestCharacter(CharacterEntity):
                     q.append(neigh)
                     path[neigh] = cur
 
-        # print("!!! No path to EXIT detected !!!")
         return -1
 
-
+    # Make a list of monster types / names at a given (x, y) location
+    #
+    # PARAM [World] wrld: current world
+    # PARAM [int] x: given x location on board
+    # PARAM [int] y: given y location on board
+    # RETURN [list(str)]: list of monster names, ie "stupid", "aggressive", "selfpreserving" for each monster detected by bomberman
     def getMonsterName(self, wrld, x, y):
         if wrld.monsters_at(x, y) != None:
             names = []
@@ -243,7 +220,12 @@ class TestCharacter(CharacterEntity):
             print("ERROR: not a monster coordinate in getMonsterName()")
         return names
 
-
+    # Calculate distance from character to monsters
+    #
+    # PARAM [World] wrld: current world
+    # PARAM [tuple(int, int)]: location of bomberman as 
+    # RETURN [list(tuples(monsterEntity, int))]: tuple of ((monster info), distance to monster) such that monster info is the found monster entity
+    #                          and distance to monster is the calculated distance to monster by BFS
     def distanceToMonsters(self, wrld, loc):
         # Simple BFS to poll the monsters
         monsters = []
@@ -274,7 +256,12 @@ class TestCharacter(CharacterEntity):
 
         return monsters
 
-
+    # Determine if givne (x,y) coordinate is within world bounds
+    #
+    # PARAM [World] wrld: current world
+    # PARAM [int] x: given x position
+    # PARAM [int] y: given y position
+    # RETURN [Boolean]: True if (x, y) coordinate is within world bounds, False otherwise
     def isCoordinateValid(self, wrld, x, y):
         # Bounds check
         if x >= wrld.width() or x < 0:
@@ -291,7 +278,10 @@ class TestCharacter(CharacterEntity):
 
         return True
 
-
+    # Function purpose
+    #
+    # PARAM type wrld, type name: here
+    # RETURN type: here
     def getNeighbors(self, wrld, x, y):
         offsets = [-1, 0, 1]
         neighbors = []
@@ -305,7 +295,12 @@ class TestCharacter(CharacterEntity):
 
         return neighbors
 
-
+    # Make bomberman move
+    #
+    # PARAM [World] wrld: current world
+    # PARAM [int] dx: how to move bomberman in x direction/
+    # PARAM [int] dy: how to move bomberman in y direction
+    # RETURN [None]
     def moveChar(self, wrld, dx, dy):
         # X check
         if dx > 1:
@@ -326,65 +321,12 @@ class TestCharacter(CharacterEntity):
 
         self.char_x = self.char_x + dx
         self.char_y = self.char_y + dy
-        print("I am now at ("+str(self.char_x)+", "+str(self.char_y)+")")
         self.move(dx, dy)
 
-
-    def ab_minimax(self, wrld, char_x, char_y, depth, is_maximizing, alpha, beta):
-        # best is defined as [x, y, score/heuristic of state]
-        if is_maximizing:
-            best = [-1, -1, float('-inf')]  #might need to change this because this according to ref code is x, y --> we might need move in x, y not to a specific cell
-        else:
-            best = [-1, -1, float('inf')]
-
-        # if (depth == 0) or (wrld.monsters_at(char_x, char_y) != None) or (wrld.exit_at(char_x, char_y)):
-        if (depth == 0):
-            score = self.calcHeuristic(wrld, char_x, char_y)  #get the heuristic of the board
-            return [-1, -1, score]
-        if wrld.monsters_at(char_x, char_y) != None:
-            score = float('-inf')
-            return [-1, -1, score]
-        if wrld.exit_at(char_x, char_y):
-            score = float('inf')
-            return [-1, -1, score]
-
-        for move in self.getNeighbors(wrld, char_x, char_y):
-            char_x_temp = move[0]
-            char_y_temp = move[1]
-
-            temp_world = SensedWorld.from_world(wrld)
-            # THIS BREAKS
-            # temp_char = getCharacterEntity(temp_world)
-            # print("TEMP_CHAR: "+str(temp_char))
-            # if temp_char != -1:
-            #     temp_char.move(char_x_temp, char_y_temp)
-
-            # temp_char = temp_world.me(self)
-            # print("TEMP_CHAR: "+str(temp_char))
-            # if temp_char != -1:
-            #     temp_char.move(char_x_temp, char_y_temp)
-
-            # print("hello")
-            (next_temp_wrld, temp_events) = temp_world.next()
-
-            # #recursively call minimax on the next move as:
-            score = self.ab_minimax(next_temp_wrld, char_x_temp, char_y_temp, depth-1, not is_maximizing, alpha, beta)
-
-            if is_maximizing and (score[2] > best[2]):
-                    best = score
-                    alpha = max(alpha, score[2])
-                    if score[2] >= beta:
-                        break
-            elif not is_maximizing and (score[2] < best[2]):
-                    best = score
-                    beta = min(beta, best[2])
-                    if score[2] <= alpha:
-                        break
-
-        # print(best)
-        return best
-
-
+    # Determine whether bomberman is at a "southern" point / a good position to place a bomb
+    #
+    # PARAM [World] wrld: current world
+    # RETURN [bool]: True if bomberman is "southmost", ie, in a location where a bomb should be placed, else false
     def isSouthMost(self, wrld):
         neighbors = self.getNeighbors(wrld, self.char_x, self.char_y)
         for n in neighbors:
@@ -402,20 +344,19 @@ class TestCharacter(CharacterEntity):
 
         return True
 
+    # Check to see if path to exit is obstructed by a wall or by a monster between bomberman and exit
+    #
+    # PARAM [tuple] monster_info: list of monsters present on map, None if no monsters detected
+    # PARAM [int] distance_to_exit: distance to exit according to heuristic and BFS
+    # RETURN [bool]: True if path is obstructed by monster or wall, else false
     def isObstructed(self, monster_info, distance_to_exit):
-        print(monster_info)
         if monster_info[0] is not None:
             monster_y = monster_info[0][1]
             # is the monster in our way?
             if self.char_y < monster_y or monster_info[1] < 2:
-                print("MONSTER IN OUR WAY")
-                print(self.char_y < monster_y)
-                print(monster_info[1])
                 return True
         if distance_to_exit == -1:
-            print("NO PATH TO EXIT")
             return True
         
-        print("WE ARE FREE NO OBSTRUCTION")
         return False
    
