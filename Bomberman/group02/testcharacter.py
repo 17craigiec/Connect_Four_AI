@@ -112,7 +112,7 @@ class TestCharacter(CharacterEntity):
                 elif mtype != "stupid" and m[1] <= 4:
                     print("Too close to smart monster!!!!")
                     print("Monster info:" + str(m[0]))
-                    best = self.ab_minimax(wrld, self.char_x, self.char_y, 5, True, float('-inf'), float('inf'))
+                    best = self.ab_minimax(wrld, self.char_x, self.char_y, 1, True, float('-inf'), float('inf'))
                     best_option = (best, float('inf'))
 
 
@@ -180,18 +180,15 @@ class TestCharacter(CharacterEntity):
         # If there is a close monster between you and the exit, just evade
         d = self.distanceToExit(wrld, x, y)
         exit_hur = 0
-        if not (closest_monster[0][1] > self.char_y and closest_monster[1] < 5):
-            if d != -1:
-                exit_hur = -1*d
-            else:
-                # If there is no path to exit, make it drift south
-                exit_hur = y
+        if d != -1:
+            exit_hur = -2*d + pow(3, -1*(d-5.5))
         else:
-            exit_hur = -1*y
+            # If there is no path to exit, make it drift south
+            exit_hur = y
 
         # Make bomberman afriad of walls
         w = wrld.width()
-        wall_hur = -1.1*pow(x-w/2, 2) + 2*w
+        wall_hur = -1*pow(x-w/2, 2) + 2*w
 
         bomb_hur = 0
         if y > self.bomb_loc[1]:
