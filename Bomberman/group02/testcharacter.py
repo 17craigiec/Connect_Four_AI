@@ -74,6 +74,7 @@ class TestCharacter(CharacterEntity):
 
     def nextMoveHeuristic(self, wrld):
         #if i'm too close to a monster, run minimax
+        distance_to_exit = self.distanceToExit(wrld, self.char_x, self.char_y)
         distances_to_mon = self.distanceToMonsters(wrld, getCharacterLoc(wrld))
         closest_monster = 999
 
@@ -84,10 +85,12 @@ class TestCharacter(CharacterEntity):
             if h > best_option[1]:
                 best_option = (neigh, h)
 
+        monster_info = (None, 999)
         for m in distances_to_mon:
             monTypes = self.getMonsterName(wrld, m[0][0], m[0][1])
             if m[1] < closest_monster:
                 closest_monster = m[1]
+                monster_info = m
 
             # for mtype in monTypes:
             #     if mtype == "stupid" and m[1] <= 3:
@@ -105,12 +108,11 @@ class TestCharacter(CharacterEntity):
 
 
         # Check to see if there is no path to exit
-        if self.isSouthMost(wrld) and self.bomb_timer == 0 and closest_monster > 2:
+        if self.isSouthMost(wrld) and self.isObstructed(monster_info, distance_to_exit) and self.bomb_timer == 0 and closest_monster > 2:
             print("I AM SOUTHMOST")
             return (0,0)
 
         next_move = (best_option[0][0]-self.char_x, best_option[0][1]-self.char_y)
-        print(next_move)
 
         return next_move
 
@@ -142,24 +144,27 @@ class TestCharacter(CharacterEntity):
                 closest_monster = m
                 monTypes = self.getMonsterName(wrld, m[0][0], m[0][1])
                 for mtype in monTypes:
+                    # print("Monster type: " + str(mtype))
                     if mtype == "stupid":
-                        monst_hur += -600/pow(closest_monster[1],4)
+                        monst_hur += -1000/pow(closest_monster[1],3)
+                    # elif mtype != "stupid" and self.distanceToExit(wrld, x, y) == -1:
+                    #     #make us play more aggressively when there is a wall we need to blow thru
+                    #     monst_hur += -1000/pow(closest_monster[1],3)
+                    # elif mtype == "selfpreserving":
+                    #     monst_hur += -1000/pow(closest_monster[1],2)
+                    # elif mtype == "aggressive":
+                    #     #subtract 1 by making it say "alright, they can see more so be wary"
+                    #     closer_dist = 0
+                    #     if closest_monster[1] > 1:
+                    #         closer_dist = closest_monster[1]-1
+                    #     else:
+                    #         closer_dist = closest_monster[1]
+                    #     monst_hur += -1000/pow(closer_dist,2)
                     elif mtype != "stupid":
-                        monst_hur += -1000/pow(closest_monster[1],4)
+                        monst_hur += -1000/pow(closest_monster[1],2)
 
         # Heuristic driven from closeness to monster
         # monst_hur = -1000/pow(closest_monster,4)
-
-
-        # Heuristic driven from distance to exit
-        # If there is a close monster between you and the exit, just evade
-        d = self.distanceToExit(wrld, x, y)
-        exit_hur = 0
-        if d != -1 and d < wrld.width():
-            exit_hur = 5*y + (wrld.width() -2*d + pow(3, -1*(d-5.5)))
-        else:
-            # If there is no path to exit, make it drift south
-            exit_hur = 5*y
 
         # Make bomberman afriad of walls
         w = wrld.width()
@@ -171,6 +176,22 @@ class TestCharacter(CharacterEntity):
             monster_y = closest_monster[0][1]
             if monster_y > self.char_y & closest_monster[1] > 3:
                 wall_hur += -1*pow((x-w/2)+(monster_x-w/2), 2) + 2*w
+
+
+        # Heuristic driven from distance to exit
+        # If there is a close monster between you and the exit, just evade
+        d = self.distanceToExit(wrld, x, y)
+        exit_hur = 0
+        if d != -1 and d < wrld.width():
+            if not self.isObstructed(closest_monster, d):
+                print("NOT OBSTRUCTED")
+                exit_hur = 1000*(100-d)
+            else:
+                exit_hur = 5*y + (wrld.width() -2*d + pow(3, -1*(d-5.5)))
+        else:
+            # If there is no path to exit, make it drift south
+            exit_hur = 5*y
+
 
         bomb_hur = 0
         if y > self.bomb_loc[1]:
@@ -338,6 +359,11 @@ class TestCharacter(CharacterEntity):
             # if temp_char != -1:
             #     temp_char.move(char_x_temp, char_y_temp)
 
+            # temp_char = temp_world.me(self)
+            # print("TEMP_CHAR: "+str(temp_char))
+            # if temp_char != -1:
+            #     temp_char.move(char_x_temp, char_y_temp)
+
             # print("hello")
             (next_temp_wrld, temp_events) = temp_world.next()
 
@@ -355,7 +381,7 @@ class TestCharacter(CharacterEntity):
                     if score[2] <= alpha:
                         break
 
-        print(best)
+        # print(best)
         return best
 
 
@@ -369,6 +395,27 @@ class TestCharacter(CharacterEntity):
             if self.char_x+1 < wrld.width() and self.char_x-1 > 0:
                 if wrld.wall_at(self.char_x+1, self.char_y) and wrld.wall_at(self.char_x-1, self.char_y):
                     return True
+            elif (not self.char_x+1 < wrld.width()) and wrld.wall_at(self.char_x-1, self.char_y):
+                return True
+            elif (not self.char_x-1 > 0) and wrld.wall_at(self.char_x+1, self.char_y):
+                return True
 
         return True
+
+    def isObstructed(self, monster_info, distance_to_exit):
+        print(monster_info)
+        if monster_info[0] is not None:
+            monster_y = monster_info[0][1]
+            # is the monster in our way?
+            if self.char_y < monster_y or monster_info[1] < 2:
+                print("MONSTER IN OUR WAY")
+                print(self.char_y < monster_y)
+                print(monster_info[1])
+                return True
+        if distance_to_exit == -1:
+            print("NO PATH TO EXIT")
+            return True
+        
+        print("WE ARE FREE NO OBSTRUCTION")
+        return False
    
