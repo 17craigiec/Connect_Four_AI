@@ -4,6 +4,7 @@ sys.path.insert(0, '../bomberman')
 # Import necessary stuff
 from entity import CharacterEntity
 from colorama import Fore, Back
+from sensed_world import SensedWorld
 
 class TestCharacter(CharacterEntity):
 
@@ -434,6 +435,7 @@ class TestCharacter(CharacterEntity):
 
         return best
 
+
     def ab_minimax(self, wrld, char_x, char_y, depth, is_maximizing, alpha, beta):
         # best is defined as [x, y, score/heuristic of state]
         if is_maximizing:
@@ -455,6 +457,8 @@ class TestCharacter(CharacterEntity):
             char_x_temp = move[0]
             char_y_temp = move[1]
 
+
+
             #recursively call minimax on the next move as:
             score = self.ab_minimax(wrld, char_x_temp, char_y_temp, depth-1, not is_maximizing, alpha, beta)
             score[0], score[1] = char_x_temp, char_y_temp
@@ -471,6 +475,14 @@ class TestCharacter(CharacterEntity):
                         break
 
         return best
+
+    def getSuccessorWorld(self, wrld, new_char_x, new_char_y):
+        successors = []
+
+        monsters = self.locateMonsters(wrld)
+        temp_world = SensedWorld.from_world(wrld)
+        temp_mons = self.locateMonsters(temp_world)
+
 
     def placeBombSittingDuck(self, wrld):
         if self.bomb_timer == 1:
@@ -538,3 +550,7 @@ class TestCharacter(CharacterEntity):
             return (tmp[0]-self.char_x, tmp[1]-self.char_y)
         else:
             return (0,0)
+
+
+
+    
