@@ -161,32 +161,37 @@ class TestCharacter(CharacterEntity):
 
         # Heuristic driven from closeness to monster and by type of monster
         monst_hur = 0
-        closest_monster = 999
+        closest_monster = (None, 999)
         for m in monsters:
-            if m[1] < closest_monster:
-                closest_monster = m[1]
+            if m[1] < closest_monster[1]:
+                closest_monster = m
                 monTypes = self.getMonsterName(wrld, m[0][0], m[0][1])
                 for mtype in monTypes:
                     if mtype == "stupid":
-                        monst_hur += -1000/pow(closest_monster,4)
+                        monst_hur += -1000/pow(closest_monster[1],4)
                     elif mtype != "stupid":
-                        monst_hur += -2000/pow(closest_monster,4)
+                        monst_hur += -2000/pow(closest_monster[1],4)
 
         # Heuristic driven from closeness to monster
         # monst_hur = -1000/pow(closest_monster,4)
 
 
         # Heuristic driven from distance to exit
+        # If there is a close monster between you and the exit, just evade
         d = self.distanceToExit(wrld, x, y)
-        if d != -1:
-            exit_hur = -1*d
+        exit_hur = 0
+        if not (closest_monster[0][1] > self.char_y and closest_monster[1] < 5):
+            if d != -1:
+                exit_hur = -1*d
+            else:
+                # If there is no path to exit, make it drift south
+                exit_hur = y
         else:
-            # If there is no path to exit, make it drift south
-            exit_hur = y
+            exit_hur = -1*y
 
         # Make bomberman afriad of walls
         w = wrld.width()
-        wall_hur = -1*pow(x-w/2, 2) + 2*w
+        wall_hur = -1.1*pow(x-w/2, 2) + 2*w
 
         bomb_hur = 0
         if y > self.bomb_loc[1]:
@@ -195,7 +200,7 @@ class TestCharacter(CharacterEntity):
         # Sum all huristic values
         total = monst_hur + exit_hur + wall_hur + bomb_hur
 
-        # print(str(monst_hur)+str(exit_hur)+str(wall_hur)+str(bomb_hur))
+        # print("total: "+str(total)+"  monst: "+str(monst_hur)+"  exit: "+str(exit_hur)+"  wall: "+str(wall_hur)+"  bomb: "+str(bomb_hur))
 
         return total
 
