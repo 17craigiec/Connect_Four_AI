@@ -10,8 +10,10 @@ class TestCharacter(CharacterEntity):
     char = CharacterEntity
     char_x = 0
     char_y = 0
-
+    
     bomb_timer = 0
+    bomb_loc = (-1,-1)
+    dangerous_locations = []
 
     # list of neighboring coordinates to walls, should be updated after bomb  -- NOT USED ANYMORE
     # cspace = []
@@ -27,65 +29,113 @@ class TestCharacter(CharacterEntity):
         print("\n\n")
         # self.updateCspaceCoords(wrld)
         # next_move = self.nextMoveHeuristic(wrld)
-        monsters = self.locateMonsters(wrld)
-        next_move = self.nextMoveToExit(wrld) # connor's code
-
-        
+        # monsters = self.locateMonsters(wrld)
+        # next_move = self.nextMoveToExit(wrld) # connor's code
+        next_move = self.nextMoveHeuristic(wrld)
 
         # self.moveChar(wrld, next_move[0], next_move[1])
         # print("Monsters Located at: "+str(self.locateMonsters(wrld)))
         # print("distance to EXIT is: "+str(self.distanceToExit(wrld, self.char_x, self.char_y)))
 
         ########### connor's bomb code ##############
+        # # If no path to exit can be found aka next_move==(0,0), continue south untill a wall is encountered
+        # if next_move == (0,0) and self.bomb_timer == 0:
+        #     # This function moves you south untill a wall is discovered, when abutting a wall return 0,0
+        #     next_move = self.moveSouth2(wrld)
+        #     # If you see a wall place the bomb and increment the global timer
+        #     if next_move == (0,0):
+        #         self.place_bomb()
+        #         self.bomb_timer += 1
+        #     else:
+        #         self.moveChar(wrld, next_move[0], next_move[1])
+        #     return
+        # elif self.bomb_timer > 0:
+        #     # This esle statement contains the instructions for bomberman when a bomb is placed
+        #     bomb_loc = self.locateBomb(wrld)
+        #     print(self.calcPotentiallyExplosiveLocations(bomb_loc))
+
+        #     self.placeBombSittingDuck(wrld)
+        #     self.bomb_timer += 1
+        #     if self.bomb_timer > 14:
+        #         print("RESETTING BOMB TIMER")
+        #         self.bomb_timer = 0
+        #     return
+
+        # if self.bomb_timer == 0:
+        #     next_move = self.nextMoveHeuristic(wrld)
+        #     self.moveChar(wrld, next_move[0], next_move[1])
+
+
+        ########### connor's bomb code 2 ##############
+        # If no path to exit can be found aka next_move==(0,0), continue south untill a wall is encountered
         if next_move == (0,0) and self.bomb_timer == 0:
-            next_move = self.moveSouth2(wrld)
-            if next_move == (0,0):
-                self.place_bomb()
-                self.bomb_timer += 1
-            else:
-                self.moveChar(wrld, next_move[0], next_move[1])
-            return
+            self.place_bomb()
+            self.bomb_loc = (self.char_x, self.char_y)
+            self.dangerous_locations = self.calcPotentiallyExplosiveLocations(self.bomb_loc)
+            # Start the timer
+            self.bomb_timer += 1
+
         elif self.bomb_timer > 0:
-            self.placeBombSittingDuck(wrld)
+            # This esle statement contains the instructions for bomberman when a bomb is placed
             self.bomb_timer += 1
             if self.bomb_timer > 14:
                 print("RESETTING BOMB TIMER")
                 self.bomb_timer = 0
-            return
+                self.bomb_loc = (-1,-1)
+                self.dangerous_locations = []
 
-        if self.bomb_timer == 0:
-            next_move = self.nextMoveHeuristic(wrld)
-            self.moveChar(wrld, next_move[0], next_move[1])
+        self.moveChar(wrld, next_move[0], next_move[1])
 
 
     def nextMoveHeuristic(self, wrld):
         #if i'm too close to a monster, run minimax
         distances_to_mon = self.distanceToMonsters(wrld, self.char_x, self.char_y)
-        for m in distances_to_mon:
-            monTypes = self.getMonsterName(wrld, m[0][0], m[0][1])
-            # print("Montype:" + monType)
-            for mtype in monTypes:
-                if mtype == "stupid" and m[1] <= 2:
-                    print("Too close to stupid monster!!")
-                    # best = self.minimax(wrld, self.char_x, self.char_y, 3, True)
-                    best = self.ab_minimax(wrld, self.char_x, self.char_y, 3, True, float('-inf'), float('inf'))
-                    return (best[0]-self.char_x,best[1]-self.char_y)
-                elif mtype != "stupid" and m[1] <= 4:
-                    print("Too close to smart monster!!!!")
-                    print("Monster info:" + str(m[0]))
-                    # best = self.minimax(wrld, self.char_x, self.char_y, 4, True)
-                    best = self.ab_minimax(wrld, self.char_x, self.char_y, 5, True, float('-inf'), float('inf'))
-                    return (best[0]-self.char_x,best[1]-self.char_y)
-        #else, run bfs
-            # else:
-                # best_option = ((0,0), -1)
-        best_option = ((0,0), float('-inf'))
+        closest_monster = 999
+
+        best_option = ((0, 0), float('-inf'))
         for neigh in self.getNeighbors(wrld, self.char_x, self.char_y):
             h = self.calcHeuristic(wrld, neigh[0], neigh[1])
             if h > best_option[1]:
                 best_option = (neigh, h)
 
-        return (best_option[0][0]-self.char_x, best_option[0][1]-self.char_y)
+        for m in distances_to_mon:
+            monTypes = self.getMonsterName(wrld, m[0][0], m[0][1])
+            if m[1] < closest_monster:
+                closest_monster = m[1]
+
+            for mtype in monTypes:
+                if mtype == "stupid" and m[1] <= 3:
+                    print("Too close to stupid monster!!")
+                    best = self.ab_minimax(wrld, self.char_x, self.char_y, 3, True, float('-inf'), float('inf'))
+                    best_option = (best, float('inf'))
+
+                elif mtype != "stupid" and m[1] <= 4:
+                    print("Too close to smart monster!!!!")
+                    print("Monster info:" + str(m[0]))
+                    best = self.ab_minimax(wrld, self.char_x, self.char_y, 5, True, float('-inf'), float('inf'))
+                    best_option = (best, float('inf'))
+
+
+        # Check to see if there is no path to exit
+        if self.isSouthMost(wrld) and self.bomb_timer == 0 and closest_monster > 2:
+            print("I AM SOUTHMOST")
+            return (0,0)
+
+        next_move = (best_option[0][0]-self.char_x, best_option[0][1]-self.char_y)
+        print(next_move)
+
+        return next_move
+
+
+    def calcPotentiallyExplosiveLocations(self, bomb_loc):
+        bomb_r = 4
+        danger_zones = [bomb_loc]
+
+        for d in [(0,1), (1,0), (0,-1), (-1,0)]:
+            for r in range(1, bomb_r+1):
+                danger_zones.append( (bomb_loc[0]+r*d[0], bomb_loc[1]+r*d[1]) )
+
+        return danger_zones
 
 
     def updateCspaceCoords(self, wrld):
@@ -109,35 +159,43 @@ class TestCharacter(CharacterEntity):
         else:
             closest_monster = 1
 
+        # Heuristic driven from closeness to monster and by type of monster
+        monst_hur = 0
         closest_monster = 999
         for m in monsters:
             if m[1] < closest_monster:
                 closest_monster = m[1]
-                # print("Monster Name: "+self.getMonsterName(wrld, m[0][0], m[0][1])[0])
+                monTypes = self.getMonsterName(wrld, m[0][0], m[0][1])
+                for mtype in monTypes:
+                    if mtype == "stupid":
+                        monst_hur += -1000/pow(closest_monster,4)
+                    elif mtype != "stupid":
+                        monst_hur += -2000/pow(closest_monster,4)
 
-        # total = (-1000/pow(closest_monster,4))-2*pow(self.distanceToExit(wrld, x, y),1.2)
         # Heuristic driven from closeness to monster
-        monst_hur = -1000/pow(closest_monster,4)
+        # monst_hur = -1000/pow(closest_monster,4)
+
 
         # Heuristic driven from distance to exit
         d = self.distanceToExit(wrld, x, y)
-        exit_hur = -2*d + pow(3,-(d-5.5))
+        if d != -1:
+            exit_hur = -1*d
+        else:
+            # If there is no path to exit, make it drift south
+            exit_hur = y
 
         # Make bomberman afriad of walls
         w = wrld.width()
         wall_hur = -1*pow(x-w/2, 2) + 2*w
 
-        # Check
+        bomb_hur = 0
+        if y > self.bomb_loc[1]:
+            bomb_hur = -10
 
         # Sum all huristic values
-        total = monst_hur + exit_hur + wall_hur
+        total = monst_hur + exit_hur + wall_hur + bomb_hur
 
-        # Nonlinear threshold getting close to monster
-        if closest_monster <= 2:
-            total += -2000
-
-        # if (x, y) in self.cspace:
-        #     total -= 10
+        # print(str(monst_hur)+str(exit_hur)+str(wall_hur)+str(bomb_hur))
 
         return total
 
@@ -193,7 +251,7 @@ class TestCharacter(CharacterEntity):
                     q.append(neigh)
                     path[neigh] = cur
 
-        print("!!! No path to EXIT detected !!!")
+        # print("!!! No path to EXIT detected !!!")
         return -1
 
 
@@ -271,17 +329,20 @@ class TestCharacter(CharacterEntity):
 
 
     def isCoordinateValid(self, wrld, x, y):
-        is_valid = True
-
         # Bounds check
         if x >= wrld.width() or x < 0:
             return False
         if y >= wrld.height() or y < 0:
             return False
         if wrld.wall_at(x, y):
-            is_valid = False
+            return False
+        if self.bomb_timer >= 10:
+            if (x, y) in self.dangerous_locations:
+                return False
+        if wrld.explosion_at(x, y):
+            return False
 
-        return is_valid
+        return True
 
 
     def getNeighbors(self, wrld, x, y):
@@ -430,6 +491,20 @@ class TestCharacter(CharacterEntity):
         else:
             print("Wall Detected")
             return True
+
+
+    def isSouthMost(self, wrld):
+        neighbors = self.getNeighbors(wrld, self.char_x, self.char_y)
+        for n in neighbors:
+            # If a neighbor is seen and is more south, return false
+            if n[1] > self.char_y:
+                return False
+
+            if self.char_x+1 < wrld.width() and self.char_x-1 > 0:
+                if wrld.wall_at(self.char_x+1, self.char_y) and wrld.wall_at(self.char_x-1, self.char_y):
+                    return True
+
+        return True
 
 
     def moveSouth2(self, wrld):
